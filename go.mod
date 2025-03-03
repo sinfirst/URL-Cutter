@@ -1,3 +1,3 @@
 module github.com/sinfirst/URL-Cutter
 
-go 1.22.12
+go 1.23.2
