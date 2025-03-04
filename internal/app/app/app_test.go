@@ -79,7 +79,7 @@ func TestPost(t *testing.T) {
 		},
 		{
 			name:         "Invalid req",
-			origURL:      "http://mail.ru/",
+			origURL:      "",
 			expectedCode: http.StatusBadRequest,
 		},
 	}

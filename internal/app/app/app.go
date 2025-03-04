@@ -48,10 +48,15 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Correct url required", http.StatusBadRequest)
 	}
-	shortURL = a.getShortURL()
-	a.storage.Set(shortURL, string(body))
-	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
+	for {
+		shortURL = a.getShortURL()
+		if _, flag := a.storage.Get(shortURL); flag {
+			a.storage.Set(shortURL, string(body))
+			w.WriteHeader(http.StatusCreated)
+			fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
+			break
+		}
+	}
 }
 
 func (a *App) getShortURL() string {
