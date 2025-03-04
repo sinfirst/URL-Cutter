@@ -50,7 +50,7 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	for {
 		shortURL = a.getShortURL()
-		if _, flag := a.storage.Get(shortURL); flag {
+		if _, flag := a.storage.Get(shortURL); !flag {
 			a.storage.Set(shortURL, string(body))
 			w.WriteHeader(http.StatusCreated)
 			fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
