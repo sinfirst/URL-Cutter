@@ -1,9 +1,11 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
@@ -11,9 +13,8 @@ import (
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
 )
 
-func TestGet(t *testing.T) {
+func TestHanedlers(t *testing.T) {
 	stg := storage.NewStorage()
-	stg.Set("abcdefgh", "http://mail.ru/")
 	cfg := config.NewConfig()
 	a := NewApp(stg, cfg)
 
@@ -25,32 +26,48 @@ func TestGet(t *testing.T) {
 		return req.WithContext(ctx)
 	}
 	tests := []struct {
-		name           string
-		shortURL       string
-		expectedCode   int
-		expectedHeader string
+		name             string
+		origURL          string
+		expectedPostCode int
+		expectedGetCode  int
+		expectedHeader   string
+		expectedBody     string
 	}{
 		{
-			name:           "valid short URL",
-			shortURL:       "abcdefgh",
-			expectedCode:   http.StatusTemporaryRedirect,
-			expectedHeader: "http://mail.ru/",
+			name:             "test #1",
+			origURL:          "http://mail.ru/",
+			expectedGetCode:  http.StatusTemporaryRedirect,
+			expectedPostCode: http.StatusCreated,
+			expectedHeader:   "http://mail.ru/",
 		},
 		{
-			name:           "Invalid req",
-			shortURL:       "asajkdashgkj",
-			expectedCode:   http.StatusBadRequest,
-			expectedHeader: "",
+			name:             "Invalid req",
+			origURL:          "",
+			expectedPostCode: http.StatusBadRequest,
+			expectedHeader:   "",
+			expectedBody:     "url param required",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := testRequest(tt.shortURL)
+			req := httptest.NewRequest("POST", "/", bytes.NewBufferString((tt.origURL)))
 			resRec := httptest.NewRecorder()
+			a.PostHandler(resRec, req)
+			if resRec.Code != tt.expectedPostCode {
+				t.Errorf("expected status %d, got %d", tt.expectedPostCode, resRec.Code)
+			}
+			if tt.name == "Invalid req" {
+				return
+			}
+			body := resRec.Body.String()
+			shortURL := strings.Split(body, "//")
+			shortURL = strings.Split(shortURL[1], "/")
+			req = testRequest(shortURL[len(shortURL)-1])
+			resRec = httptest.NewRecorder()
 			a.GetHandler(resRec, req)
 
-			if resRec.Code != tt.expectedCode {
-				t.Errorf("expected status %d, got %d", tt.expectedCode, resRec.Code)
+			if resRec.Code != tt.expectedGetCode {
+				t.Errorf("expected status %d, got %d", tt.expectedGetCode, resRec.Code)
 			}
 
 			locationHeader := resRec.Header().Get("Location")
@@ -60,37 +77,3 @@ func TestGet(t *testing.T) {
 		})
 	}
 }
-
-/*func TestPost(t *testing.T) {
-	stg := storage.NewStorage()
-	cfg := config.NewConfig()
-	a := NewApp(stg, cfg)
-
-	tests := []struct {
-		name         string
-		origURL      string
-		expectedCode int
-	}{
-		{
-			name:         "valid short URL",
-			origURL:      "http://mail.ru/",
-			expectedCode: http.StatusCreated,
-		},
-		{
-			name:         "Invalid req",
-			origURL:      "",
-			expectedCode: http.StatusBadRequest,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest("POST", "/", bytes.NewReader([]byte(tt.origURL)))
-			resRec := httptest.NewRecorder()
-			a.PostHandler(resRec, req)
-
-			if resRec.Code != tt.expectedCode {
-				t.Errorf("expected status %d, got %d", tt.expectedCode, resRec.Code)
-			}
-		})
-	}
-}*/

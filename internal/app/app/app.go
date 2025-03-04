@@ -39,7 +39,7 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(body) == 0 {
+	if len(string(body)) == 0 {
 		http.Error(w, "url param required", http.StatusBadRequest)
 		return
 	}
