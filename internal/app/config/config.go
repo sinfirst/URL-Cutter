@@ -1,6 +1,9 @@
 package config
 
-import "strings"
+import (
+	"flag"
+	"strings"
+)
 
 type Config struct {
 	ServerAdress string
@@ -10,8 +13,9 @@ type Config struct {
 
 func NewConfig() Config {
 	var conf Config
-	conf.ServerAdress = "http://localhost:8080"
-	conf.Host = ":8080"
 	conf.Letters = strings.Split("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", "")
+	flag.StringVar(&conf.ServerAdress, "a", "localhost:8080", "server adress")
+	flag.StringVar(&conf.Host, "b", "http://localhost:8080", "host")
+	flag.Parse()
 	return conf
 }

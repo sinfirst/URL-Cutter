@@ -12,5 +12,5 @@ func main() {
 	strg := storage.NewStorage()
 	a := app.NewApp(strg, conf)
 	rout := router.NewRouter(a)
-	rout.Run(conf.Host)
+	rout.Run(conf.ServerAdress)
 }
