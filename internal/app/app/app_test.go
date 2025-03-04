@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"net/http/httptest"
@@ -56,6 +57,40 @@ func TestGet(t *testing.T) {
 			locationHeader := resRec.Header().Get("Location")
 			if locationHeader != tt.expectedHeader {
 				t.Errorf("expected header %v got %v", tt.expectedHeader, locationHeader)
+			}
+		})
+	}
+}
+
+func TestPost(t *testing.T) {
+	stg := storage.NewStorage()
+	cfg := config.NewConfig()
+	a := NewApp(stg, cfg)
+
+	tests := []struct {
+		name         string
+		origURL      string
+		expectedCode int
+	}{
+		{
+			name:         "valid short URL",
+			origURL:      "http://mail.ru/",
+			expectedCode: http.StatusCreated,
+		},
+		{
+			name:         "Invalid req",
+			origURL:      "http://mail.ru/",
+			expectedCode: http.StatusBadRequest,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest("POST", "/", bytes.NewReader([]byte(tt.origURL)))
+			resRec := httptest.NewRecorder()
+			a.PostHandler(resRec, req)
+
+			if resRec.Code != tt.expectedCode {
+				t.Errorf("expected status %d, got %d", tt.expectedCode, resRec.Code)
 			}
 		})
 	}
