@@ -1,11 +1,11 @@
 package app
 
 import (
-	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
 
+	"github.com/gin-gonic/gin"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
 )
@@ -19,34 +19,31 @@ func NewApp(storage storage.Storage, config config.Config) *App {
 	return &App{storage: storage, config: config}
 }
 
-func (a *App) GetHandler(w http.ResponseWriter, r *http.Request) {
-	idGet := r.PathValue("id")
-	fmt.Println("test 3 ", idGet)
+func (a *App) GetHandler(ctx *gin.Context) {
+	idGet := ctx.Param("id")
 	if origURL, flag := a.storage.Get(idGet); flag {
-		w.Header().Set("Location", origURL)
-		w.WriteHeader(http.StatusTemporaryRedirect)
+		ctx.Header("Location", origURL)
+		ctx.IndentedJSON(http.StatusTemporaryRedirect, gin.H{})
 	} else {
-		http.Error(w, "URL not found", http.StatusBadRequest)
+		ctx.IndentedJSON(http.StatusBadRequest, gin.H{})
 	}
 }
 
-func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
+func (a *App) PostHandler(ctx *gin.Context) {
 	var shortURL string
-	body, err := io.ReadAll(r.Body)
+	url, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
-		http.Error(w, "Failed to read request body", http.StatusBadRequest)
-		return
+		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err})
 	}
-	if len(body) == 0 {
-		http.Error(w, "url is empty", http.StatusBadRequest)
+	if string(url) == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"message": "url param required"})
 		return
 	}
 	for {
 		shortURL = a.getShortURL()
 		if _, flag := a.storage.Get(shortURL); !flag {
-			a.storage.Set(shortURL, string(body))
-			w.WriteHeader(http.StatusCreated)
-			fmt.Fprintf(w, "%s/%s", a.config.ServerAdress, shortURL)
+			a.storage.Set(shortURL, string(url))
+			ctx.String(http.StatusCreated, "http://localhost:8080/"+shortURL)
 			break
 		}
 	}

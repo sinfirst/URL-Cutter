@@ -1,17 +1,15 @@
 package router
 
 import (
-	"net/http"
-
+	"github.com/gin-gonic/gin"
 	"github.com/sinfirst/URL-Cutter/internal/app/app"
 )
 
-func NewRouter(a *app.App) *http.ServeMux {
-	router := http.NewServeMux()
-	router.HandleFunc("POST /", a.PostHandler)
-	router.HandleFunc("GET /{id}", a.GetHandler)
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusBadRequest)
-	})
-	return router
+func NewRouter(a *app.App) *gin.Engine {
+	server := gin.Default()
+	server.HandleMethodNotAllowed = true
+	server.POST(`/`, a.PostHandler)
+	server.GET(`/:id`, a.GetHandler)
+
+	return server
 }
