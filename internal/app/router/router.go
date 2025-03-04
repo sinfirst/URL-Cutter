@@ -1,15 +1,13 @@
 package router
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
 	"github.com/sinfirst/URL-Cutter/internal/app/app"
 )
 
-func NewRouter(a *app.App) *gin.Engine {
-	server := gin.Default()
-	server.HandleMethodNotAllowed = true
-	server.POST(`/`, a.PostHandler)
-	server.GET(`/:id`, a.GetHandler)
-
-	return server
+func NewRouter(a app.App) *chi.Mux {
+	router := chi.NewRouter()
+	router.Post("/", a.PostHandler)
+	router.Get("/{id}", a.GetHandler)
+	return router
 }

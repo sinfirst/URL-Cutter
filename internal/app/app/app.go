@@ -1,11 +1,13 @@
 package app
 
 import (
+	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
+	"net/url"
 
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
 )
@@ -19,34 +21,37 @@ func NewApp(storage storage.Storage, config config.Config) *App {
 	return &App{storage: storage, config: config}
 }
 
-func (a *App) GetHandler(ctx *gin.Context) {
-	idGet := ctx.Param("id")
+func (a *App) GetHandler(w http.ResponseWriter, r *http.Request) {
+	idGet := chi.URLParam(r, "id")
 	if origURL, flag := a.storage.Get(idGet); flag {
-		ctx.Header("Location", origURL)
-		ctx.IndentedJSON(http.StatusTemporaryRedirect, gin.H{})
+		w.Header().Set("Location", origURL)
+		w.WriteHeader(http.StatusTemporaryRedirect)
 	} else {
-		ctx.IndentedJSON(http.StatusBadRequest, gin.H{})
+		w.WriteHeader(http.StatusBadRequest)
 	}
 }
 
-func (a *App) PostHandler(ctx *gin.Context) {
+func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 	var shortURL string
-	url, err := io.ReadAll(ctx.Request.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"message": err})
-	}
-	if string(url) == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"message": "url param required"})
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
 		return
 	}
-	for {
-		shortURL = a.getShortURL()
-		if _, flag := a.storage.Get(shortURL); !flag {
-			a.storage.Set(shortURL, string(url))
-			ctx.String(http.StatusCreated, "http://localhost:8080/"+shortURL)
-			break
-		}
+
+	if len(body) == 0 {
+		http.Error(w, "url param required", http.StatusBadRequest)
+		return
 	}
+	_, err = url.ParseRequestURI(string(body))
+
+	if err != nil {
+		http.Error(w, "Correct url required", http.StatusBadRequest)
+	}
+	shortURL = a.getShortURL()
+	a.storage.Set(shortURL, string(body))
+	w.WriteHeader(http.StatusCreated)
+	fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
 }
 
 func (a *App) getShortURL() string {

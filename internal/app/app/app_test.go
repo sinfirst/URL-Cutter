@@ -1,52 +1,53 @@
 package app
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/gin-gonic/gin"
+	"github.com/go-chi/chi/v5"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
 )
 
 func TestGet(t *testing.T) {
 	stg := storage.NewStorage()
+	stg.Set("abcdefgh", "http://mail.ru/")
 	cfg := config.NewConfig()
 	a := NewApp(stg, cfg)
-	gin.SetMode(gin.TestMode)
-	r := gin.Default()
-	r.GET("/:id", a.GetHandler)
-	a.storage.Set("abcdefgh", "http://mail.ru/")
 
+	testRequest := func(shortURL string) *http.Request {
+		req := httptest.NewRequest("GET", "/"+shortURL, nil)
+		rctx := chi.NewRouteContext()
+		rctx.URLParams.Add("id", shortURL)
+		ctx := context.WithValue(req.Context(), chi.RouteCtxKey, rctx)
+		return req.WithContext(ctx)
+	}
 	tests := []struct {
 		name           string
 		shortURL       string
 		expectedCode   int
 		expectedHeader string
-		expectedBody   string
 	}{
 		{
 			name:           "valid short URL",
 			shortURL:       "abcdefgh",
 			expectedCode:   http.StatusTemporaryRedirect,
 			expectedHeader: "http://mail.ru/",
-			expectedBody:   "{}",
 		},
 		{
-			name:           "Invalid method",
+			name:           "Invalid req",
 			shortURL:       "asajkdashgkj",
 			expectedCode:   http.StatusBadRequest,
 			expectedHeader: "",
-			expectedBody:   "{}",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest("GET", "/"+tt.shortURL, nil)
+			req := testRequest(tt.shortURL)
 			resRec := httptest.NewRecorder()
-
-			r.ServeHTTP(resRec, req)
+			a.GetHandler(resRec, req)
 
 			if resRec.Code != tt.expectedCode {
 				t.Errorf("expected status %d, got %d", tt.expectedCode, resRec.Code)
