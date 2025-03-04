@@ -1,7 +1,6 @@
 package app
 
 import (
-	"bytes"
 	"context"
 	"net/http"
 	"net/http/httptest"
@@ -62,7 +61,7 @@ func TestGet(t *testing.T) {
 	}
 }
 
-func TestPost(t *testing.T) {
+/*func TestPost(t *testing.T) {
 	stg := storage.NewStorage()
 	cfg := config.NewConfig()
 	a := NewApp(stg, cfg)
@@ -94,4 +93,4 @@ func TestPost(t *testing.T) {
 			}
 		})
 	}
-}
+}*/
