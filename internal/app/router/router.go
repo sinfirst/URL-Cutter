@@ -3,11 +3,13 @@ package router
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/sinfirst/URL-Cutter/internal/app/app"
+	"github.com/sinfirst/URL-Cutter/middleware/logging"
+	"go.uber.org/zap"
 )
 
-func NewRouter(a app.App) *chi.Mux {
+func NewRouter(a app.App, sugar zap.SugaredLogger) *chi.Mux {
 	router := chi.NewRouter()
-	router.Post("/", a.PostHandler)
-	router.Get("/{id}", a.GetHandler)
+	router.Post("/", logging.WithLogging(a.PostHandler, sugar))
+	router.Get("/{id}", logging.WithLogging(a.GetHandler, sugar))
 	return router
 }
