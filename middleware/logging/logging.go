@@ -52,11 +52,11 @@ func WithLogging(h http.HandlerFunc, sugar zap.SugaredLogger) http.HandlerFunc {
 		duration := time.Since(start)
 		sugar.Infoln(
 			"\n",
-			"---REQUEST---\n",
+			"-----REQUEST-----\n",
 			"URI:", r.RequestURI, "\n",
 			"Method:", r.Method, "\n",
 			"Duration:", duration, "\n",
-			"---RESPONSE---\n",
+			"-----RESPONSE-----\n",
 			"Status:", responseData.status, "\n",
 			"Size:", responseData.size, "\n",
 		)
