@@ -101,10 +101,10 @@ func TestHanedlersWithJSON(t *testing.T) {
 	}{
 		{
 			name:             "Test JSON #1",
-			origBody:         "{\"url\": \"http://mail.ru/\"}",
+			origBody:         `{"url": "http://mail.ru/"}`,
 			expectedGetCode:  http.StatusTemporaryRedirect,
 			expectedPostCode: http.StatusCreated,
-			expectedHeader:   "{\"result\": \"http://mail.ru/\"}",
+			expectedHeader:   "http://mail.ru/",
 		},
 		{
 			name:             "Invalid req",
@@ -114,7 +114,7 @@ func TestHanedlersWithJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest("POST", "/", bytes.NewBufferString((tt.origBody)))
+			req := httptest.NewRequest("POST", "/api/shorten/", bytes.NewBufferString(tt.origBody))
 			resRec := httptest.NewRecorder()
 			a.JSONPostHandler(resRec, req)
 			if resRec.Code != tt.expectedPostCode {
@@ -128,7 +128,7 @@ func TestHanedlersWithJSON(t *testing.T) {
 			}
 			var output Output
 			var buf bytes.Buffer
-			_, err := buf.ReadFrom(req.Body)
+			_, err := buf.ReadFrom(resRec.Body)
 			if err != nil {
 				t.Errorf("empty answer")
 			}
