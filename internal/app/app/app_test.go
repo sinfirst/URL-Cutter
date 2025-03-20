@@ -81,7 +81,7 @@ func TestHanedlers(t *testing.T) {
 
 func TestHanedlersWithJSON(t *testing.T) {
 	stg := storage.NewStorage()
-	cfg := config.NewConfig()
+	cfg := config.Config{Host: "http://localhost", Letters: strings.Split("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", "")}
 	a := NewApp(stg, cfg)
 
 	testRequest := func(shortURL string) *http.Request {
@@ -114,7 +114,7 @@ func TestHanedlersWithJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest("POST", "/api/shorten", bytes.NewBufferString(tt.origBody))
+			req := httptest.NewRequest("POST", "/shorten", bytes.NewBufferString(tt.origBody))
 			req.Header.Set("Content-Type", "application/json")
 			resRec := httptest.NewRecorder()
 			a.JSONPostHandler(resRec, req)
