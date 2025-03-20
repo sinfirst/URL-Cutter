@@ -64,7 +64,7 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 	var shortURL string
 	type Input struct {
-		Url string `json:"url"`
+		URL string `json:"url"`
 	}
 	type Output struct {
 		Result string `json:"result"`
@@ -81,7 +81,7 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	body := input.Url
+	body := input.URL
 	for {
 		shortURL = a.getShortURL()
 		if _, flag := a.storage.Get(shortURL); !flag {
