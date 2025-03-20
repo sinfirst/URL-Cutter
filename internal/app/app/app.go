@@ -1,6 +1,8 @@
 package app
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
@@ -54,6 +56,45 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 			a.storage.Set(shortURL, string(body))
 			w.WriteHeader(http.StatusCreated)
 			fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
+			break
+		}
+	}
+}
+
+func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
+	var shortURL string
+	type Input struct {
+		Url string `json:"url"`
+	}
+	type Output struct {
+		Result string `json:"result"`
+	}
+	var input Input
+	var output Output
+	var buf bytes.Buffer
+	_, err := buf.ReadFrom(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err = json.Unmarshal(buf.Bytes(), &input); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	body := input.Url
+	for {
+		shortURL = a.getShortURL()
+		if _, flag := a.storage.Get(shortURL); !flag {
+			a.storage.Set(shortURL, string(body))
+			output = Output{Result: a.config.Host + "/" + shortURL}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusCreated)
+			resp, err := json.Marshal(output)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Write(resp)
 			break
 		}
 	}
