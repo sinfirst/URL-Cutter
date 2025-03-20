@@ -114,7 +114,8 @@ func TestHanedlersWithJSON(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest("POST", "/api/shorten/", bytes.NewBufferString(tt.origBody))
+			req := httptest.NewRequest("POST", "/api/shorten", bytes.NewBufferString(tt.origBody))
+			req.Header.Set("Content-Type", "application/json")
 			resRec := httptest.NewRecorder()
 			a.JSONPostHandler(resRec, req)
 			if resRec.Code != tt.expectedPostCode {
