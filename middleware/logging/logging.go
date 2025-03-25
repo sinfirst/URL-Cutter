@@ -7,6 +7,8 @@ import (
 	"go.uber.org/zap"
 )
 
+var sugar zap.SugaredLogger
+
 type ResponseData struct {
 	status int
 	size   int
@@ -34,8 +36,8 @@ type ResponseWriter interface {
 	WriteHeader(statusCode int)
 }
 
-func WithLogging(h http.HandlerFunc, sugar zap.SugaredLogger) http.HandlerFunc {
-	logFn := func(w http.ResponseWriter, r *http.Request) {
+func WithLogging(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
 		responseData := &ResponseData{
@@ -60,9 +62,7 @@ func WithLogging(h http.HandlerFunc, sugar zap.SugaredLogger) http.HandlerFunc {
 			"Status:", responseData.status, "\n",
 			"Size:", responseData.size, "\n",
 		)
-	}
-
-	return http.HandlerFunc(logFn)
+	})
 }
 
 func NewLogger() zap.SugaredLogger {
@@ -73,5 +73,7 @@ func NewLogger() zap.SugaredLogger {
 
 	defer logger.Sync()
 
-	return *logger.Sugar()
+	sugar = *logger.Sugar()
+
+	return sugar
 }

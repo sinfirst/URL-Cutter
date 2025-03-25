@@ -15,7 +15,7 @@ func main() {
 	conf := config.NewConfig()
 	strg := storage.NewStorage()
 	a := app.NewApp(strg, conf)
-	rout := router.NewRouter(*a, logger)
+	rout := router.NewRouter(*a)
 
 	logger.Infow("Starting server", "addr", conf.ServerAdress)
 	http.ListenAndServe(conf.ServerAdress, rout)

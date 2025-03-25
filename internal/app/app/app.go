@@ -7,7 +7,6 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
-	"net/url"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
@@ -42,14 +41,10 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(string(body)) == 0 {
-		http.Error(w, "url param required", http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
 		return
 	}
-	_, err = url.ParseRequestURI(string(body))
 
-	if err != nil {
-		http.Error(w, "Correct url required", http.StatusBadRequest)
-	}
 	for {
 		shortURL = a.getShortURL()
 		if _, flag := a.storage.Get(shortURL); !flag {
