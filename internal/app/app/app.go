@@ -10,16 +10,18 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
+	"github.com/sinfirst/URL-Cutter/internal/app/files"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
 )
 
 type App struct {
 	storage storage.Storage
 	config  config.Config
+	file    files.File
 }
 
-func NewApp(storage storage.Storage, config config.Config) *App {
-	return &App{storage: storage, config: config}
+func NewApp(storage storage.Storage, config config.Config, file files.File) *App {
+	return &App{storage: storage, config: config, file: file}
 }
 
 func (a *App) GetHandler(w http.ResponseWriter, r *http.Request) {
@@ -49,6 +51,10 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 		shortURL = a.getShortURL()
 		if _, flag := a.storage.Get(shortURL); !flag {
 			a.storage.Set(shortURL, string(body))
+			a.file.UpdateFile(files.JSONStruct{
+				ShortURL:    shortURL,
+				OriginalURL: string(body),
+			})
 			w.WriteHeader(http.StatusCreated)
 			fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
 			break
@@ -75,6 +81,10 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 		shortURL = a.getShortURL()
 		if _, flag := a.storage.Get(shortURL); !flag {
 			a.storage.Set(shortURL, string(body))
+			a.file.UpdateFile(files.JSONStruct{
+				ShortURL:    shortURL,
+				OriginalURL: string(body),
+			})
 			output = storage.Output{Result: a.config.Host + "/" + shortURL}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
