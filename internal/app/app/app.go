@@ -58,14 +58,8 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 	var shortURL string
-	type Input struct {
-		URL string `json:"url"`
-	}
-	type Output struct {
-		Result string `json:"result"`
-	}
-	var input Input
-	var output Output
+	var input storage.Input
+	var output storage.Output
 	var buf bytes.Buffer
 	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
@@ -81,7 +75,7 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 		shortURL = a.getShortURL()
 		if _, flag := a.storage.Get(shortURL); !flag {
 			a.storage.Set(shortURL, string(body))
-			output = Output{Result: a.config.Host + "/" + shortURL}
+			output = storage.Output{Result: a.config.Host + "/" + shortURL}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
 			resp, err := json.Marshal(output)
