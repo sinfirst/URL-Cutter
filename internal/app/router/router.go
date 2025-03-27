@@ -10,8 +10,8 @@ import (
 func NewRouter(a app.App) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(logging.WithLogging)
-	router.With(compress.CompressHandle).Post("/", a.PostHandler)
-	router.With(compress.CompressHandle).Post("/api/shorten", a.JSONPostHandler)
-	router.With(compress.DecompressHandle).Get("/{id}", a.GetHandler)
+	router.With(compress.DecompressHandle).Post("/", a.PostHandler)
+	router.With(compress.DecompressHandle).Post("/api/shorten", a.JSONPostHandler)
+	router.With(compress.CompressHandle).Get("/{id}", a.GetHandler)
 	return router
 }
