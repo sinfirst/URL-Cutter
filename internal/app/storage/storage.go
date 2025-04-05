@@ -1,5 +1,12 @@
 package storage
 
+type OriginalURL struct {
+	URL string `json:"url"`
+}
+type ResultURL struct {
+	Result string `json:"result"`
+}
+
 type Storage interface {
 	Set(key, value string)
 	Get(key string) (string, bool)
