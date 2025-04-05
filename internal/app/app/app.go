@@ -2,11 +2,14 @@ package app
 
 import (
 	"bytes"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
@@ -22,6 +25,19 @@ type App struct {
 
 func NewApp(storage *storage.MapStorage, config config.Config, file *files.File) *App {
 	return &App{storage: storage, config: config, file: file}
+}
+
+func (a *App) ConnectToDB(w http.ResponseWriter, r *http.Request) {
+	db, err := sql.Open("pgx", a.config.DatabaseDsn)
+
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Failed connect to database", http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (a *App) GetHandler(w http.ResponseWriter, r *http.Request) {
