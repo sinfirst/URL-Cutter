@@ -1,9 +1,9 @@
 package storage
 
-type Input struct {
+type OriginalURL struct {
 	URL string `json:"url"`
 }
-type Output struct {
+type ResultURL struct {
 	Result string `json:"result"`
 }
 

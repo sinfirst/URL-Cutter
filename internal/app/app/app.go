@@ -17,10 +17,10 @@ import (
 type App struct {
 	storage storage.Storage
 	config  config.Config
-	file    files.File
+	file    *files.File
 }
 
-func NewApp(storage storage.Storage, config config.Config, file files.File) *App {
+func NewApp(storage *storage.MapStorage, config config.Config, file *files.File) *App {
 	return &App{storage: storage, config: config, file: file}
 }
 
@@ -51,7 +51,7 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 		shortURL = a.getShortURL()
 		if _, flag := a.storage.Get(shortURL); !flag {
 			a.storage.Set(shortURL, string(body))
-			a.file.UpdateFile(files.JSONStruct{
+			a.file.UpdateFile(files.JSONStructForBD{
 				ShortURL:    shortURL,
 				OriginalURL: string(body),
 			})
@@ -64,8 +64,8 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 	var shortURL string
-	var input storage.Input
-	var output storage.Output
+	var input storage.OriginalURL
+	var output storage.ResultURL
 	var buf bytes.Buffer
 	_, err := buf.ReadFrom(r.Body)
 	if err != nil {
@@ -81,11 +81,11 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 		shortURL = a.getShortURL()
 		if _, flag := a.storage.Get(shortURL); !flag {
 			a.storage.Set(shortURL, string(body))
-			a.file.UpdateFile(files.JSONStruct{
+			a.file.UpdateFile(files.JSONStructForBD{
 				ShortURL:    shortURL,
 				OriginalURL: string(body),
 			})
-			output = storage.Output{Result: a.config.Host + "/" + shortURL}
+			output = storage.ResultURL{Result: a.config.Host + "/" + shortURL}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
 			resp, err := json.Marshal(output)

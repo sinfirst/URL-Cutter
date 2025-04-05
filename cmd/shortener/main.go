@@ -16,7 +16,7 @@ func main() {
 	conf := config.NewConfig()
 	strg := storage.NewStorage()
 	file := files.NewFile(conf, strg)
-	a := app.NewApp(strg, conf, *file)
+	a := app.NewApp(strg, conf, file)
 	rout := router.NewRouter(*a)
 
 	logger.Infow("Starting server", "addr", conf.ServerAdress)

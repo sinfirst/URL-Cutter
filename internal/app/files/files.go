@@ -11,7 +11,7 @@ import (
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
 )
 
-type JSONStruct struct {
+type JSONStructForBD struct {
 	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
@@ -22,13 +22,13 @@ type File struct {
 	UUID   int
 }
 
-func NewFile(config config.Config, storage storage.Storage) *File {
-	f := &File{config: config}
-	f.ReadFile(storage)
+func NewFile(cfg config.Config, stg *storage.MapStorage) *File {
+	f := &File{config: cfg}
+	f.ReadFile(stg)
 	return f
 }
 
-func (f *File) UpdateFile(jsonStruct JSONStruct) {
+func (f *File) UpdateFile(jsonStruct JSONStructForBD) {
 
 	f.UUID++
 	jsonStruct.UUID = strconv.Itoa(f.UUID)
@@ -62,7 +62,7 @@ func (f *File) UpdateFile(jsonStruct JSONStruct) {
 
 func (f *File) ReadFile(strg storage.Storage) {
 
-	var jsonStrct JSONStruct
+	var jsonStrct JSONStructForBD
 	err := os.MkdirAll(filepath.Dir(f.config.FilePath), os.ModePerm)
 
 	if err != nil {
@@ -83,5 +83,8 @@ func (f *File) ReadFile(strg storage.Storage) {
 		strg.Set(jsonStrct.ShortURL, jsonStrct.OriginalURL)
 	}
 
-	f.UUID, _ = strconv.Atoi(jsonStrct.UUID)
+	f.UUID, err = strconv.Atoi(jsonStrct.UUID)
+	if err != nil {
+		return
+	}
 }

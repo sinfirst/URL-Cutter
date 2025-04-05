@@ -19,7 +19,7 @@ func TestHanedlers(t *testing.T) {
 	stg := storage.NewStorage()
 	cfg := config.NewConfig()
 	file := files.NewFile(cfg, stg)
-	a := NewApp(stg, cfg, *file)
+	a := NewApp(stg, cfg, file)
 
 	testRequest := func(shortURL string) *http.Request {
 		req := httptest.NewRequest("GET", "/"+shortURL, nil)
@@ -85,7 +85,7 @@ func TestHanedlersWithJSON(t *testing.T) {
 	stg := storage.NewStorage()
 	cfg := config.Config{Host: "http://localhost", Letters: strings.Split("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", "")}
 	file := files.NewFile(cfg, stg)
-	a := NewApp(stg, cfg, *file)
+	a := NewApp(stg, cfg, file)
 
 	testRequest := func(shortURL string) *http.Request {
 		req := httptest.NewRequest("GET", "/"+shortURL, nil)
