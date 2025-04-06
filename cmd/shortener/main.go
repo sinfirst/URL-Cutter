@@ -20,5 +20,8 @@ func main() {
 	rout := router.NewRouter(*a)
 
 	logger.Infow("Starting server", "addr", conf.ServerAdress)
-	http.ListenAndServe(conf.ServerAdress, rout)
+	err := http.ListenAndServe(conf.ServerAdress, rout)
+	if err != nil {
+		logger.Panicf("Can't run server")
+	}
 }
