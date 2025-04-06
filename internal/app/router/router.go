@@ -5,10 +5,10 @@ import (
 	"github.com/sinfirst/URL-Cutter/internal/app/app"
 	"github.com/sinfirst/URL-Cutter/internal/app/middleware/compress"
 	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
-	"github.com/sinfirst/URL-Cutter/internal/app/postgresBD"
+	"github.com/sinfirst/URL-Cutter/internal/app/postgresbd"
 )
 
-func NewRouter(a app.App, pg postgresBD.PGDB) *chi.Mux {
+func NewRouter(a app.App, pg postgresbd.PGDB) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(logging.WithLogging)
 	router.With(compress.DecompressHandle).Post("/", a.PostHandler)

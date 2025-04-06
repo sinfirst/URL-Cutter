@@ -7,7 +7,7 @@ import (
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
 	"github.com/sinfirst/URL-Cutter/internal/app/files"
 	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
-	"github.com/sinfirst/URL-Cutter/internal/app/postgresBD"
+	"github.com/sinfirst/URL-Cutter/internal/app/postgresbd"
 	"github.com/sinfirst/URL-Cutter/internal/app/router"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
 )
@@ -17,7 +17,7 @@ func main() {
 	conf := config.NewConfig()
 	strg := storage.NewStorage()
 	file := files.NewFile(conf, strg)
-	pg := postgresBD.NewPGDB(conf, logger, strg, file)
+	pg := postgresbd.NewPGDB(conf, logger, strg, file)
 	a := app.NewApp(strg, conf, file, pg)
 	rout := router.NewRouter(*a, *pg)
 

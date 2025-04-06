@@ -13,7 +13,7 @@ import (
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
 	"github.com/sinfirst/URL-Cutter/internal/app/files"
 	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
-	"github.com/sinfirst/URL-Cutter/internal/app/postgresBD"
+	"github.com/sinfirst/URL-Cutter/internal/app/postgresbd"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
 )
 
@@ -23,7 +23,7 @@ func TestHanedlers(t *testing.T) {
 	cfg := config.NewConfig()
 	logger := logging.NewLogger()
 	file := files.NewFile(cfg, stg)
-	pg := postgresBD.NewPGDB(cfg, logger, stg, file)
+	pg := postgresbd.NewPGDB(cfg, logger, stg, file)
 	a := NewApp(stg, cfg, file, pg)
 
 	testRequest := func(shortURL string) *http.Request {
@@ -91,7 +91,7 @@ func TestHanedlersWithJSON(t *testing.T) {
 	cfg := config.NewConfig()
 	logger := logging.NewLogger()
 	file := files.NewFile(cfg, stg)
-	pg := postgresBD.NewPGDB(cfg, logger, stg, file)
+	pg := postgresbd.NewPGDB(cfg, logger, stg, file)
 	a := NewApp(stg, cfg, file, pg)
 	testRequest := func(shortURL string) *http.Request {
 		req := httptest.NewRequest("GET", "/"+shortURL, nil)

@@ -1,4 +1,4 @@
-package postgresBD
+package postgresbd
 
 import (
 	"context"
