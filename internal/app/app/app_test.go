@@ -12,14 +12,19 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
 	"github.com/sinfirst/URL-Cutter/internal/app/files"
+	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
+	"github.com/sinfirst/URL-Cutter/internal/app/postgresBD"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
 )
 
 func TestHanedlers(t *testing.T) {
+
 	stg := storage.NewStorage()
 	cfg := config.NewConfig()
+	logger := logging.NewLogger()
 	file := files.NewFile(cfg, stg)
-	a := NewApp(stg, cfg, file)
+	pg := postgresBD.NewPGDB(cfg, logger, stg, file)
+	a := NewApp(stg, cfg, file, pg)
 
 	testRequest := func(shortURL string) *http.Request {
 		req := httptest.NewRequest("GET", "/"+shortURL, nil)
@@ -83,10 +88,11 @@ func TestHanedlers(t *testing.T) {
 
 func TestHanedlersWithJSON(t *testing.T) {
 	stg := storage.NewStorage()
-	cfg := config.Config{Host: "http://localhost", Letters: strings.Split("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", "")}
+	cfg := config.NewConfig()
+	logger := logging.NewLogger()
 	file := files.NewFile(cfg, stg)
-	a := NewApp(stg, cfg, file)
-
+	pg := postgresBD.NewPGDB(cfg, logger, stg, file)
+	a := NewApp(stg, cfg, file, pg)
 	testRequest := func(shortURL string) *http.Request {
 		req := httptest.NewRequest("GET", "/"+shortURL, nil)
 		rctx := chi.NewRouteContext()

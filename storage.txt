@@ -1,0 +1,4 @@
+{"uuid":"1","short_url":"XRIJMDrO","original_url":"http://mail.ru/"}
+{"uuid":"2","short_url":"lVLLgwar","original_url":"{\"url\": \"http://mail.ru/\"}"}
+{"uuid":"3","short_url":"xYrYkgsX","original_url":"{\"url\": \"http://mail.ru/\"}"}
+{"uuid":"4","short_url":"gRsVmXAH","original_url":"http://mail.ru/"}
