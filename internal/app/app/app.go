@@ -27,19 +27,6 @@ func NewApp(storage *storage.MapStorage, config config.Config, file *files.File)
 	return &App{storage: storage, config: config, file: file}
 }
 
-func (a *App) ConnectToDB(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("pgx", a.config.DatabaseDsn)
-
-	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Failed connect to database", http.StatusInternalServerError)
-		return
-	}
-	defer db.Close()
-
-	w.WriteHeader(http.StatusOK)
-}
-
 func (a *App) GetHandler(w http.ResponseWriter, r *http.Request) {
 	idGet := chi.URLParam(r, "id")
 	if origURL, flag := a.storage.Get(idGet); flag {
@@ -71,6 +58,7 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 				ShortURL:    shortURL,
 				OriginalURL: string(body),
 			})
+			a.addDataToDB(shortURL, string(body))
 			w.WriteHeader(http.StatusCreated)
 			fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
 			break
@@ -101,6 +89,7 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 				ShortURL:    shortURL,
 				OriginalURL: string(body),
 			})
+			a.addDataToDB(shortURL, string(body))
 			output = storage.ResultURL{Result: a.config.Host + "/" + shortURL}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
@@ -112,6 +101,50 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 			w.Write(resp)
 			break
 		}
+	}
+}
+
+func (a *App) CheckConnectToDB(w http.ResponseWriter, _ *http.Request) {
+	db, err := sql.Open("pgx", a.config.DatabaseDsn)
+
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Failed connect to database", http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+	err = db.Ping()
+
+	if err != nil {
+		http.Error(w, "Failed ping to database", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+func (a *App) addDataToDB(shortURL, originalURL string) {
+	db, err := sql.Open("pgx", a.config.DatabaseDsn)
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		return
+	}
+
+	_, err = db.Exec(`
+	CREATE TABLE IF NOT EXISTS urls (
+		short_url TEXT NOT NULL PRIMARY KEY,
+		original_url TEXT NOT NULL
+	);`)
+	if err != nil {
+		panic(err)
+	}
+	_, err = db.Exec(`INSERT INTO urls VALUES ($1, $2)`, shortURL, originalURL)
+	if err != nil {
+		panic(err)
 	}
 }
 

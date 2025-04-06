@@ -13,6 +13,6 @@ func NewRouter(a app.App) *chi.Mux {
 	router.With(compress.DecompressHandle).Post("/", a.PostHandler)
 	router.With(compress.DecompressHandle).Post("/api/shorten", a.JSONPostHandler)
 	router.With(compress.CompressHandle).Get("/{id}", a.GetHandler)
-	router.Get("/ping", a.ConnectToDB)
+	router.Get("/ping", a.CheckConnectToDB)
 	return router
 }

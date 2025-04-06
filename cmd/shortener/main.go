@@ -21,8 +21,7 @@ func main() {
 
 	logger.Infow("Starting server", "addr", conf.ServerAdress)
 	err := http.ListenAndServe(conf.ServerAdress, rout)
-
 	if err != nil {
-		panic(err)
+		logger.Panicf("Can't run server")
 	}
 }
