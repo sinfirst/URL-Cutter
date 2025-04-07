@@ -26,14 +26,14 @@ func (p *PGDB) ConnectToDB() (*sql.DB, error) {
 	db, err := sql.Open("pgx", p.config.DatabaseDsn)
 
 	if err != nil {
-		p.logger.Errorw("Problem with connecting to db: ", err)
+		p.logger.Infoln("Problem with connecting to db: ", err)
 		return nil, err
 	}
 
 	err = db.Ping()
 
 	if err != nil {
-		p.logger.Errorw("Problem with ping to db: ", err)
+		p.logger.Infoln("Problem with ping to db: ", err)
 		return nil, err
 	}
 
