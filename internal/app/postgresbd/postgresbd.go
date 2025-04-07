@@ -128,7 +128,8 @@ func (p *PGDB) AddDataToDB(shortURL, originalURL string) {
 	db, err := p.ConnectToDB()
 
 	if err != nil {
-		panic(err)
+		p.logger.Infoln("Failed connection database")
+		return
 	}
 	defer db.Close()
 	p.CreateTable(db)

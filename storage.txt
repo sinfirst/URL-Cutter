@@ -2,3 +2,5 @@
 {"uuid":"2","short_url":"lVLLgwar","original_url":"{\"url\": \"http://mail.ru/\"}"}
 {"uuid":"3","short_url":"xYrYkgsX","original_url":"{\"url\": \"http://mail.ru/\"}"}
 {"uuid":"4","short_url":"gRsVmXAH","original_url":"http://mail.ru/"}
+{"uuid":"5","short_url":"cntzdaer","original_url":"https://practicum.yandex.ru\r\n"}
+{"uuid":"6","short_url":"RZmysRjz","original_url":"https://practicum.yandex.ru\r\n"}
