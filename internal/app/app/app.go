@@ -8,9 +8,12 @@ import (
 	"math/rand"
 	"net/http"
 
+	_ "github.com/jackc/pgx/v5/stdlib"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
 	"github.com/sinfirst/URL-Cutter/internal/app/files"
+	"github.com/sinfirst/URL-Cutter/internal/app/postgresbd"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
 )
 
@@ -18,10 +21,44 @@ type App struct {
 	storage storage.Storage
 	config  config.Config
 	file    *files.File
+	pg      *postgresbd.PGDB
 }
 
-func NewApp(storage *storage.MapStorage, config config.Config, file *files.File) *App {
-	return &App{storage: storage, config: config, file: file}
+func NewApp(storage *storage.MapStorage, config config.Config, file *files.File, pg *postgresbd.PGDB) *App {
+	return &App{storage: storage, config: config, file: file, pg: pg}
+}
+
+func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
+	var requests []storage.ShortenRequestForBatch
+	err := json.NewDecoder(r.Body).Decode(&requests)
+
+	if err != nil {
+		http.Error(w, "Bad JSON data", http.StatusBadRequest)
+		return
+	}
+
+	if len(requests) == 0 {
+		http.Error(w, "Batch cannot be empty", http.StatusBadRequest)
+		return
+	}
+
+	var responces []storage.ShortenResponceForBatch
+	for _, req := range requests {
+		shortURL := a.getShortURL()
+		responces = append(responces, storage.ShortenResponceForBatch{
+			CorrelationID: req.CorrelationID,
+			ShortURL:      a.config.Host + "/" + shortURL,
+		})
+
+		if _, flag := a.storage.Get(shortURL); !flag {
+			a.storage.Set(shortURL, req.OriginalURL)
+			a.pg.SaveData(shortURL, req.OriginalURL)
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(responces)
 }
 
 func (a *App) GetHandler(w http.ResponseWriter, r *http.Request) {
@@ -47,18 +84,16 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	for {
-		shortURL = a.getShortURL()
-		if _, flag := a.storage.Get(shortURL); !flag {
-			a.storage.Set(shortURL, string(body))
-			a.file.UpdateFile(files.JSONStructForBD{
-				ShortURL:    shortURL,
-				OriginalURL: string(body),
-			})
-			w.WriteHeader(http.StatusCreated)
-			fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
-			break
-		}
+	shortURL = a.getShortURL()
+	if _, flag := a.storage.Get(shortURL); !flag {
+		a.storage.Set(shortURL, string(body))
+		a.file.UpdateFile(files.JSONStructForBD{
+			ShortURL:    shortURL,
+			OriginalURL: string(body),
+		})
+		a.pg.AddDataToDB(shortURL, string(body))
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
 	}
 }
 
@@ -85,6 +120,7 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 				ShortURL:    shortURL,
 				OriginalURL: string(body),
 			})
+			a.pg.AddDataToDB(shortURL, string(body))
 			output = storage.ResultURL{Result: a.config.Host + "/" + shortURL}
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)

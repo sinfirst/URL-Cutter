@@ -29,7 +29,6 @@ func NewFile(cfg config.Config, stg *storage.MapStorage) *File {
 }
 
 func (f *File) UpdateFile(jsonStruct JSONStructForBD) {
-
 	f.UUID++
 	jsonStruct.UUID = strconv.Itoa(f.UUID)
 
@@ -61,7 +60,6 @@ func (f *File) UpdateFile(jsonStruct JSONStructForBD) {
 }
 
 func (f *File) ReadFile(strg storage.Storage) {
-
 	var jsonStrct JSONStructForBD
 	err := os.MkdirAll(filepath.Dir(f.config.FilePath), os.ModePerm)
 
