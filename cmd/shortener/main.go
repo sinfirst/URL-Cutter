@@ -7,7 +7,7 @@ import (
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
 	"github.com/sinfirst/URL-Cutter/internal/app/files"
 	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
-	"github.com/sinfirst/URL-Cutter/internal/app/postgresbd"
+	"github.com/sinfirst/URL-Cutter/internal/app/pg/postgresbd"
 	"github.com/sinfirst/URL-Cutter/internal/app/router"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
 )
@@ -15,15 +15,16 @@ import (
 func main() {
 	logger := logging.NewLogger()
 	conf := config.NewConfig()
-	strg := storage.NewStorage()
-	file := files.NewFile(conf, strg)
-	pg := postgresbd.NewPGDB(conf, logger, strg, file)
-	a := app.NewApp(strg, conf, file, pg)
-	rout := router.NewRouter(*a, *pg)
+	strg := storage.NewStorage(conf, logger)
+	file := files.NewFile(conf, logger)
+	pg := postgresbd.NewPGDB(conf, logger)
+	a := app.NewApp(strg, conf, *file, pg, logger)
+	router := router.NewRouter(*a)
 
 	logger.Infow("Starting server", "addr", conf.ServerAdress)
-	err := http.ListenAndServe(conf.ServerAdress, rout)
+	err := http.ListenAndServe(conf.ServerAdress, router)
+
 	if err != nil {
-		logger.Panicf("Can't run server")
+		logger.Fatalw("Can't run server ", err)
 	}
 }

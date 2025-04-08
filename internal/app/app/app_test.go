@@ -7,13 +7,15 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
 )
 
 func TestRedirect(t *testing.T) {
-	m1 := storage.NewStorage()
+	m1 := storage.NewMapStorage()
 	m1.Set("abc123", "https://example.com")
-	app := &App{storage: m1}
+	logger := logging.NewLogger()
+	app := &App{storage: m1, logger: logger}
 
 	testRequest := func(shortURL string) *http.Request {
 		req := httptest.NewRequest("GET", "/"+shortURL, nil)

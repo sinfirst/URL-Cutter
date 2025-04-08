@@ -1,5 +1,12 @@
 package storage
 
+import (
+	"github.com/sinfirst/URL-Cutter/internal/app/config"
+	"github.com/sinfirst/URL-Cutter/internal/app/files"
+	"github.com/sinfirst/URL-Cutter/internal/app/pg/postgresbd"
+	"go.uber.org/zap"
+)
+
 type OriginalURL struct {
 	URL string `json:"url"`
 }
@@ -16,7 +23,7 @@ type ShortenResponceForBatch struct {
 	ShortURL      string `json:"short_url"`
 }
 type Storage interface {
-	Set(key, value string)
+	Set(key, value string) bool
 	Get(key string) (string, bool)
 }
 
@@ -24,12 +31,26 @@ type MapStorage struct {
 	data map[string]string
 }
 
-func NewStorage() *MapStorage {
+func NewMapStorage() *MapStorage {
 	return &MapStorage{data: make(map[string]string)}
 }
 
-func (s *MapStorage) Set(key, value string) {
+func NewStorage(conf config.Config, logger zap.SugaredLogger) Storage {
+	if conf.DatabaseDsn != "" {
+		logger.Infow("DB config")
+		return postgresbd.NewPGDB(conf, logger)
+	}
+	if conf.FilePath != "" {
+		logger.Infow("file config")
+		return files.NewFile(conf, logger)
+	}
+	logger.Infow("memory config")
+	return NewMapStorage()
+}
+
+func (s *MapStorage) Set(key, value string) bool {
 	s.data[key] = value
+	return true
 }
 
 func (s *MapStorage) Get(key string) (string, bool) {
