@@ -125,6 +125,9 @@ func (p *PGDB) SaveData(shortURL, originalURL string) {
 }
 
 func (p *PGDB) AddDataToDB(shortURL, originalURL string) {
+	if p.config.DatabaseDsn == "" {
+		return
+	}
 	db, err := p.ConnectToDB()
 
 	if err != nil {
