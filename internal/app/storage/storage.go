@@ -38,6 +38,9 @@ func NewMapStorage() *MapStorage {
 func NewStorage(conf config.Config, logger zap.SugaredLogger) Storage {
 	if conf.DatabaseDsn != "" {
 		logger.Infow("DB config")
+		if conf.DatabaseDsn != "" {
+			postgresbd.InitMigrations(conf, logger)
+		}
 		return postgresbd.NewPGDB(conf, logger)
 	}
 	if conf.FilePath != "" {

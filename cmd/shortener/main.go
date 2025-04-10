@@ -19,10 +19,6 @@ func main() {
 	a := app.NewApp(strg, conf, pg, logger)
 	router := router.NewRouter(*a)
 
-	if conf.DatabaseDsn != "" {
-		postgresbd.InitMigrations(conf, logger)
-	}
-
 	logger.Infow("Starting server", "addr", conf.ServerAdress)
 	err := http.ListenAndServe(conf.ServerAdress, router)
 
