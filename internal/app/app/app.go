@@ -12,7 +12,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/files"
 	"github.com/sinfirst/URL-Cutter/internal/app/pg/postgresbd"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
 )
@@ -20,13 +19,12 @@ import (
 type App struct {
 	storage storage.Storage
 	config  config.Config
-	file    files.File
 	pg      *postgresbd.PGDB
 	logger  zap.SugaredLogger
 }
 
-func NewApp(storage storage.Storage, config config.Config, file files.File, pg *postgresbd.PGDB, logger zap.SugaredLogger) *App {
-	app := &App{storage: storage, config: config, file: file, pg: pg, logger: logger}
+func NewApp(storage storage.Storage, config config.Config, pg *postgresbd.PGDB, logger zap.SugaredLogger) *App {
+	app := &App{storage: storage, config: config, pg: pg, logger: logger}
 	return app
 }
 

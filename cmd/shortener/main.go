@@ -5,7 +5,6 @@ import (
 
 	"github.com/sinfirst/URL-Cutter/internal/app/app"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/files"
 	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
 	"github.com/sinfirst/URL-Cutter/internal/app/pg/postgresbd"
 	"github.com/sinfirst/URL-Cutter/internal/app/router"
@@ -16,10 +15,13 @@ func main() {
 	logger := logging.NewLogger()
 	conf := config.NewConfig()
 	strg := storage.NewStorage(conf, logger)
-	file := files.NewFile(conf, logger)
 	pg := postgresbd.NewPGDB(conf, logger)
-	a := app.NewApp(strg, conf, *file, pg, logger)
+	a := app.NewApp(strg, conf, pg, logger)
 	router := router.NewRouter(*a)
+
+	if conf.DatabaseDsn != "" {
+		postgresbd.InitMigrations(conf, logger)
+	}
 
 	logger.Infow("Starting server", "addr", conf.ServerAdress)
 	err := http.ListenAndServe(conf.ServerAdress, router)
