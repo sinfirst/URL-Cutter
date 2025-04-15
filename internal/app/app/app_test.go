@@ -13,7 +13,7 @@ import (
 
 func TestRedirect(t *testing.T) {
 	m1 := storage.NewMapStorage()
-	m1.Set("abc123", "https://example.com")
+	m1.SetInStorage("abc123", "https://example.com")
 	logger := logging.NewLogger()
 	app := &App{storage: m1, logger: logger}
 

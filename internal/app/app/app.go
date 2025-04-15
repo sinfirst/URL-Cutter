@@ -2,6 +2,7 @@ package app
 
 import (
 	"crypto/md5"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,19 +13,17 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/pg/postgresbd"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
 )
 
 type App struct {
 	storage storage.Storage
 	config  config.Config
-	pg      *postgresbd.PGDB
 	logger  zap.SugaredLogger
 }
 
-func NewApp(storage storage.Storage, config config.Config, pg *postgresbd.PGDB, logger zap.SugaredLogger) *App {
-	app := &App{storage: storage, config: config, pg: pg, logger: logger}
+func NewApp(storage storage.Storage, config config.Config, logger zap.SugaredLogger) *App {
+	app := &App{storage: storage, config: config, logger: logger}
 	return app
 }
 
@@ -50,7 +49,10 @@ func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
 			ShortURL:      a.config.Host + "/" + shortURL,
 		})
 
-		a.storage.Set(shortURL, req.OriginalURL)
+		err = a.storage.SetInStorage(shortURL, req.OriginalURL)
+		if err != nil {
+			a.logger.Errorw("Problem with set in storage", err)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -60,7 +62,7 @@ func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) GetHandler(w http.ResponseWriter, r *http.Request) {
 	idGet := chi.URLParam(r, "id")
-	if origURL, flag := a.storage.Get(idGet); flag {
+	if origURL, err := a.storage.GetFromStorage(idGet); err == nil {
 		w.Header().Set("Location", origURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	} else {
@@ -84,13 +86,16 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	shortURL := fmt.Sprintf("%x", md5.Sum(body))[:8]
-	if _, flag := a.storage.Get(shortURL); flag {
+	if _, err := a.storage.GetFromStorage(shortURL); err == nil {
 		a.logger.Infow("Original URL already in storage")
 		w.WriteHeader(http.StatusConflict)
 		fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
 		return
 	}
-	a.storage.Set(shortURL, string(body))
+	err = a.storage.SetInStorage(shortURL, string(body))
+	if err != nil {
+		a.logger.Errorw("Problem with set in storage", err)
+	}
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
 }
@@ -111,21 +116,37 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 		a.logger.Errorw("Problem with create JSONResponse")
 		return
 	}
-	if _, flag := a.storage.Get(shortURL); flag {
+	if _, err := a.storage.GetFromStorage(shortURL); err == nil {
 		a.logger.Infow("Original URL already in storage")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
 		w.Write(JSONResponse)
 		return
 	}
-	a.storage.Set(shortURL, string(input.URL))
+	err = a.storage.SetInStorage(shortURL, string(input.URL))
+	if err != nil {
+		a.logger.Errorw("Problem with set in storage", err)
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	w.Write(JSONResponse)
 }
 
 func (a *App) DBPing(w http.ResponseWriter, r *http.Request) {
-	db, _ := a.pg.ConnectToDB()
+	db, err := sql.Open("pgx", a.config.DatabaseDsn)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Failed connect to database", http.StatusInternalServerError)
+		return
+	}
 	defer db.Close()
+
+	err = db.Ping()
+
+	if err != nil {
+		http.Error(w, "Failed ping to database", http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }

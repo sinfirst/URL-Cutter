@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"fmt"
+
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
 	"github.com/sinfirst/URL-Cutter/internal/app/files"
 	"github.com/sinfirst/URL-Cutter/internal/app/pg/postgresbd"
@@ -23,8 +25,8 @@ type ShortenResponceForBatch struct {
 	ShortURL      string `json:"short_url"`
 }
 type Storage interface {
-	Set(key, value string) bool
-	Get(key string) (string, bool)
+	SetInStorage(key, value string) error
+	GetFromStorage(key string) (string, error)
 }
 
 type MapStorage struct {
@@ -51,12 +53,15 @@ func NewStorage(conf config.Config, logger zap.SugaredLogger) Storage {
 	return NewMapStorage()
 }
 
-func (s *MapStorage) Set(key, value string) bool {
+func (s *MapStorage) SetInStorage(key, value string) error {
 	s.data[key] = value
-	return true
+	return nil
 }
 
-func (s *MapStorage) Get(key string) (string, bool) {
-	value, exist := s.data[key]
-	return value, exist
+func (s *MapStorage) GetFromStorage(key string) (string, error) {
+	value, flag := s.data[key]
+	if flag {
+		return value, nil
+	}
+	return value, fmt.Errorf("not found in storage")
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"runtime"
 
@@ -19,27 +20,29 @@ type PGDB struct {
 	config config.Config
 	logger zap.SugaredLogger
 	db     *pgxpool.Pool
+	ctx    context.Context
 }
 
 func NewPGDB(config config.Config, logger zap.SugaredLogger) *PGDB {
-	db, err := pgxpool.New(context.Background(), config.DatabaseDsn)
+	ctx := context.Background()
+	db, err := pgxpool.New(ctx, config.DatabaseDsn)
 
 	if err != nil {
 		logger.Errorw("Problem with connecting to db ", err)
 		return nil
 	}
-	return &PGDB{config: config, logger: logger, db: db}
+	return &PGDB{config: config, logger: logger, db: db, ctx: ctx}
 }
 
 func (p *PGDB) ConnectToDB() (*pgxpool.Pool, error) {
-	db, err := pgxpool.New(context.Background(), p.config.DatabaseDsn) //sql.Open("pgx", p.config.DatabaseDsn)
+	db, err := pgxpool.New(p.ctx, p.config.DatabaseDsn) //sql.Open("pgx", p.config.DatabaseDsn)
 
 	if err != nil {
 		p.logger.Errorw("Problem with connecting to db ", err)
 		return nil, err
 	}
 
-	err = db.Ping(context.Background())
+	err = db.Ping(p.ctx)
 
 	if err != nil {
 		p.logger.Errorw("Problem with ping to db ", err)
@@ -50,32 +53,32 @@ func (p *PGDB) ConnectToDB() (*pgxpool.Pool, error) {
 	return db, nil
 }
 
-func (p *PGDB) Get(shortURL string) (string, bool) {
+func (p *PGDB) GetFromStorage(shortURL string) (string, error) {
 	var origURL string
-	row := p.db.QueryRow(context.Background(), `SELECT original_url FROM urls WHERE short_url = $1`, shortURL)
+	row := p.db.QueryRow(p.ctx, `SELECT original_url FROM urls WHERE short_url = $1`, shortURL)
 	row.Scan(&origURL)
 	if origURL == "" {
-		return "", false
+		return "", fmt.Errorf("not found in storage")
 	}
-	return origURL, true
+	return origURL, nil
 }
 
-func (p *PGDB) Set(shortURL, originalURL string) bool {
+func (p *PGDB) SetInStorage(shortURL, originalURL string) error {
 
-	result, err := p.db.Exec(context.Background(), `INSERT INTO urls (short_url, original_url) 
+	result, err := p.db.Exec(p.ctx, `INSERT INTO urls (short_url, original_url) 
 	VALUES ($1, $2) ON CONFLICT (short_url) DO NOTHING`, shortURL, originalURL)
 
 	if rows := result.RowsAffected(); rows == 0 {
-		return false
+		return err
 	}
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
-			return false
+			return err
 		}
 	}
 
-	return true
+	return nil
 }
 
 func InitMigrations(conf config.Config, logger zap.SugaredLogger) {
