@@ -19,18 +19,16 @@ import (
 type PGDB struct {
 	logger zap.SugaredLogger
 	db     *pgxpool.Pool
-	ctx    context.Context
 }
 
 func NewPGDB(config config.Config, logger zap.SugaredLogger) *PGDB {
-	ctx := context.Background()
-	db, err := pgxpool.New(ctx, config.DatabaseDsn)
+	db, err := pgxpool.New(context.Background(), config.DatabaseDsn)
 
 	if err != nil {
 		logger.Errorw("Problem with connecting to db ", err)
 		return nil
 	}
-	return &PGDB{logger: logger, db: db, ctx: ctx}
+	return &PGDB{logger: logger, db: db}
 }
 
 /*func (p *PGDB) ConnectToDB() (*pgxpool.Pool, error) {
@@ -52,9 +50,9 @@ func NewPGDB(config config.Config, logger zap.SugaredLogger) *PGDB {
 	return db, nil
 }*/
 
-func (p *PGDB) GetURL(shortURL string) (string, error) {
+func (p *PGDB) GetURL(ctx context.Context, shortURL string) (string, error) {
 	var origURL string
-	row := p.db.QueryRow(p.ctx, `SELECT original_url FROM urls WHERE short_url = $1`, shortURL)
+	row := p.db.QueryRow(ctx, `SELECT original_url FROM urls WHERE short_url = $1`, shortURL)
 	row.Scan(&origURL)
 	if origURL == "" {
 		return "", fmt.Errorf("not found in storage")
@@ -62,9 +60,9 @@ func (p *PGDB) GetURL(shortURL string) (string, error) {
 	return origURL, nil
 }
 
-func (p *PGDB) SetURL(shortURL, originalURL string) error {
+func (p *PGDB) SetURL(ctx context.Context, shortURL, originalURL string) error {
 
-	result, err := p.db.Exec(p.ctx, `INSERT INTO urls (short_url, original_url) 
+	result, err := p.db.Exec(ctx, `INSERT INTO urls (short_url, original_url) 
 	VALUES ($1, $2) ON CONFLICT (short_url) DO NOTHING`, shortURL, originalURL)
 
 	if rows := result.RowsAffected(); rows == 0 {

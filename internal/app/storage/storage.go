@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
@@ -25,8 +26,8 @@ type ShortenResponceForBatch struct {
 	ShortURL      string `json:"short_url"`
 }
 type Storage interface {
-	SetURL(key, value string) error
-	GetURL(key string) (string, error)
+	SetURL(ctx context.Context, key, value string) error
+	GetURL(ctx context.Context, key string) (string, error)
 }
 
 type MapStorage struct {
@@ -53,12 +54,12 @@ func NewStorage(conf config.Config, logger zap.SugaredLogger) Storage {
 	return NewMapStorage()
 }
 
-func (s *MapStorage) SetURL(key, value string) error {
+func (s *MapStorage) SetURL(ctx context.Context, key, value string) error {
 	s.data[key] = value
 	return nil
 }
 
-func (s *MapStorage) GetURL(key string) (string, error) {
+func (s *MapStorage) GetURL(ctx context.Context, key string) (string, error) {
 	value, flag := s.data[key]
 	if flag {
 		return value, nil
