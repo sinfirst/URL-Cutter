@@ -25,8 +25,8 @@ type ShortenResponceForBatch struct {
 	ShortURL      string `json:"short_url"`
 }
 type Storage interface {
-	SetInStorage(key, value string) error
-	GetFromStorage(key string) (string, error)
+	SetURL(key, value string) error
+	GetURL(key string) (string, error)
 }
 
 type MapStorage struct {
@@ -53,12 +53,12 @@ func NewStorage(conf config.Config, logger zap.SugaredLogger) Storage {
 	return NewMapStorage()
 }
 
-func (s *MapStorage) SetInStorage(key, value string) error {
+func (s *MapStorage) SetURL(key, value string) error {
 	s.data[key] = value
 	return nil
 }
 
-func (s *MapStorage) GetFromStorage(key string) (string, error) {
+func (s *MapStorage) GetURL(key string) (string, error) {
 	value, flag := s.data[key]
 	if flag {
 		return value, nil

@@ -17,7 +17,6 @@ import (
 )
 
 type PGDB struct {
-	config config.Config
 	logger zap.SugaredLogger
 	db     *pgxpool.Pool
 	ctx    context.Context
@@ -31,10 +30,10 @@ func NewPGDB(config config.Config, logger zap.SugaredLogger) *PGDB {
 		logger.Errorw("Problem with connecting to db ", err)
 		return nil
 	}
-	return &PGDB{config: config, logger: logger, db: db, ctx: ctx}
+	return &PGDB{logger: logger, db: db, ctx: ctx}
 }
 
-func (p *PGDB) ConnectToDB() (*pgxpool.Pool, error) {
+/*func (p *PGDB) ConnectToDB() (*pgxpool.Pool, error) {
 	db, err := pgxpool.New(p.ctx, p.config.DatabaseDsn) //sql.Open("pgx", p.config.DatabaseDsn)
 
 	if err != nil {
@@ -51,9 +50,9 @@ func (p *PGDB) ConnectToDB() (*pgxpool.Pool, error) {
 
 	p.logger.Infow("Connecting and ping to db: OK")
 	return db, nil
-}
+}*/
 
-func (p *PGDB) GetFromStorage(shortURL string) (string, error) {
+func (p *PGDB) GetURL(shortURL string) (string, error) {
 	var origURL string
 	row := p.db.QueryRow(p.ctx, `SELECT original_url FROM urls WHERE short_url = $1`, shortURL)
 	row.Scan(&origURL)
@@ -63,7 +62,7 @@ func (p *PGDB) GetFromStorage(shortURL string) (string, error) {
 	return origURL, nil
 }
 
-func (p *PGDB) SetInStorage(shortURL, originalURL string) error {
+func (p *PGDB) SetURL(shortURL, originalURL string) error {
 
 	result, err := p.db.Exec(p.ctx, `INSERT INTO urls (short_url, original_url) 
 	VALUES ($1, $2) ON CONFLICT (short_url) DO NOTHING`, shortURL, originalURL)
@@ -86,7 +85,8 @@ func InitMigrations(conf config.Config, logger zap.SugaredLogger) {
 	db, err := sql.Open("pgx", conf.DatabaseDsn)
 
 	if err != nil {
-		logger.Errorw("Error with connection to DB: ", err)
+		logger.Fatalw("Error with connection to DB: ", err)
+		return
 	}
 
 	defer db.Close()
@@ -96,6 +96,7 @@ func InitMigrations(conf config.Config, logger zap.SugaredLogger) {
 
 	err = goose.Up(db, migrationsPath)
 	if err != nil {
-		logger.Errorw("Error with migrations: ", err)
+		logger.Fatalw("Error with migrations: ", err)
+		return
 	}
 }

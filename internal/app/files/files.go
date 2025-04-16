@@ -28,7 +28,7 @@ func NewFile(config config.Config, logger zap.SugaredLogger) *File {
 	return f
 }
 
-func (f *File) SetInStorage(shortURL, origURL string) error { //jsonStruct JSONStruct,
+func (f *File) SetURL(shortURL, origURL string) error { //jsonStruct JSONStruct,
 
 	jsonStruct := JSONStructForFile{
 		ShortURL:    shortURL,
@@ -68,7 +68,7 @@ func (f *File) SetInStorage(shortURL, origURL string) error { //jsonStruct JSONS
 	return nil
 }
 
-func (f *File) GetFromStorage(shortURL string) (string, error) {
+func (f *File) GetURL(shortURL string) (string, error) {
 	data := make(map[string]string)
 
 	var jsonStrct JSONStructForFile

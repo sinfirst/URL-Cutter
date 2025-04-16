@@ -49,7 +49,7 @@ func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
 			ShortURL:      a.config.Host + "/" + shortURL,
 		})
 
-		err = a.storage.SetInStorage(shortURL, req.OriginalURL)
+		err = a.storage.SetURL(shortURL, req.OriginalURL)
 		if err != nil {
 			a.logger.Errorw("Problem with set in storage", err)
 		}
@@ -62,7 +62,7 @@ func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) GetHandler(w http.ResponseWriter, r *http.Request) {
 	idGet := chi.URLParam(r, "id")
-	if origURL, err := a.storage.GetFromStorage(idGet); err == nil {
+	if origURL, err := a.storage.GetURL(idGet); err == nil {
 		w.Header().Set("Location", origURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	} else {
@@ -86,13 +86,13 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	shortURL := fmt.Sprintf("%x", md5.Sum(body))[:8]
-	if _, err := a.storage.GetFromStorage(shortURL); err == nil {
+	if _, err := a.storage.GetURL(shortURL); err == nil {
 		a.logger.Infow("Original URL already in storage")
 		w.WriteHeader(http.StatusConflict)
 		fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
 		return
 	}
-	err = a.storage.SetInStorage(shortURL, string(body))
+	err = a.storage.SetURL(shortURL, string(body))
 	if err != nil {
 		a.logger.Errorw("Problem with set in storage", err)
 	}
@@ -116,14 +116,14 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 		a.logger.Errorw("Problem with create JSONResponse")
 		return
 	}
-	if _, err := a.storage.GetFromStorage(shortURL); err == nil {
+	if _, err := a.storage.GetURL(shortURL); err == nil {
 		a.logger.Infow("Original URL already in storage")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
 		w.Write(JSONResponse)
 		return
 	}
-	err = a.storage.SetInStorage(shortURL, string(input.URL))
+	err = a.storage.SetURL(shortURL, string(input.URL))
 	if err != nil {
 		a.logger.Errorw("Problem with set in storage", err)
 	}
