@@ -1,108 +1,151 @@
 package app
 
 import (
-	"bytes"
+	"crypto/md5"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
+
+	_ "github.com/jackc/pgx/v5/stdlib"
+	"go.uber.org/zap"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/files"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
 )
 
 type App struct {
 	storage storage.Storage
 	config  config.Config
-	file    *files.File
+	logger  zap.SugaredLogger
 }
 
-func NewApp(storage *storage.MapStorage, config config.Config, file *files.File) *App {
-	return &App{storage: storage, config: config, file: file}
+func NewApp(storage storage.Storage, config config.Config, logger zap.SugaredLogger) *App {
+	app := &App{storage: storage, config: config, logger: logger}
+	return app
+}
+
+func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
+	var requests []storage.ShortenRequestForBatch
+	err := json.NewDecoder(r.Body).Decode(&requests)
+
+	if err != nil {
+		a.logger.Errorw("Bad JSON data")
+		return
+	}
+
+	if len(requests) == 0 {
+		a.logger.Errorw("Batch cannot be empty")
+		return
+	}
+
+	var responces []storage.ShortenResponceForBatch
+	for _, req := range requests {
+		shortURL := fmt.Sprintf("%x", md5.Sum([]byte(req.OriginalURL)))[:8]
+		responces = append(responces, storage.ShortenResponceForBatch{
+			CorrelationID: req.CorrelationID,
+			ShortURL:      a.config.Host + "/" + shortURL,
+		})
+		err = a.storage.SetURL(r.Context(), shortURL, req.OriginalURL)
+		if err != nil {
+			a.logger.Errorw("Problem with set in storage", err)
+		}
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(responces)
 }
 
 func (a *App) GetHandler(w http.ResponseWriter, r *http.Request) {
 	idGet := chi.URLParam(r, "id")
-	if origURL, flag := a.storage.Get(idGet); flag {
+	if origURL, err := a.storage.GetURL(r.Context(), idGet); err == nil {
 		w.Header().Set("Location", origURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	} else {
+		a.logger.Infow("Can't find shortURL in storage")
 		w.WriteHeader(http.StatusBadRequest)
 	}
 }
 
 func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
-	var shortURL string
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+		a.logger.Errorw("Problem with read original URL")
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if len(string(body)) == 0 {
-		http.Error(w, fmt.Sprintf("%v", err), http.StatusBadRequest)
+		a.logger.Errorw("Original URL is empty")
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	for {
-		shortURL = a.getShortURL()
-		if _, flag := a.storage.Get(shortURL); !flag {
-			a.storage.Set(shortURL, string(body))
-			a.file.UpdateFile(files.JSONStructForBD{
-				ShortURL:    shortURL,
-				OriginalURL: string(body),
-			})
-			w.WriteHeader(http.StatusCreated)
-			fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
-			break
-		}
+	shortURL := fmt.Sprintf("%x", md5.Sum(body))[:8]
+	if _, err := a.storage.GetURL(r.Context(), shortURL); err == nil {
+		a.logger.Infow("Original URL already in storage")
+		w.WriteHeader(http.StatusConflict)
+		fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
+		return
 	}
+	err = a.storage.SetURL(r.Context(), shortURL, string(body))
+	if err != nil {
+		a.logger.Errorw("Problem with set in storage", err)
+	}
+	w.WriteHeader(http.StatusCreated)
+	fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
 }
 
 func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
-	var shortURL string
 	var input storage.OriginalURL
 	var output storage.ResultURL
-	var buf bytes.Buffer
-	_, err := buf.ReadFrom(r.Body)
+
+	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		a.logger.Errorw("Bad JSON OriginalURL")
 		return
 	}
-	if err = json.Unmarshal(buf.Bytes(), &input); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+	shortURL := fmt.Sprintf("%x", md5.Sum([]byte(input.URL)))[:8]
+	output = storage.ResultURL{Result: a.config.Host + "/" + shortURL}
+	JSONResponse, err := json.Marshal(output)
+	if err != nil {
+		a.logger.Errorw("Problem with create JSONResponse")
 		return
 	}
-	body := input.URL
-	for {
-		shortURL = a.getShortURL()
-		if _, flag := a.storage.Get(shortURL); !flag {
-			a.storage.Set(shortURL, string(body))
-			a.file.UpdateFile(files.JSONStructForBD{
-				ShortURL:    shortURL,
-				OriginalURL: string(body),
-			})
-			output = storage.ResultURL{Result: a.config.Host + "/" + shortURL}
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusCreated)
-			resp, err := json.Marshal(output)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-			w.Write(resp)
-			break
-		}
+	if _, err := a.storage.GetURL(r.Context(), shortURL); err == nil {
+		a.logger.Infow("Original URL already in storage")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		w.Write(JSONResponse)
+		return
 	}
+	err = a.storage.SetURL(r.Context(), shortURL, string(input.URL))
+	if err != nil {
+		a.logger.Errorw("Problem with set in storage", err)
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	w.Write(JSONResponse)
 }
 
-func (a *App) getShortURL() string {
-	var res string
-	for i := 0; i < 8; i++ {
-		res += a.config.Letters[rand.Intn(len(a.config.Letters))]
+func (a *App) DBPing(w http.ResponseWriter, r *http.Request) {
+	db, err := sql.Open("pgx", a.config.DatabaseDsn)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Failed connect to database", http.StatusInternalServerError)
+		return
 	}
-	return res
+	defer db.Close()
+
+	err = db.Ping()
+
+	if err != nil {
+		http.Error(w, "Failed ping to database", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
