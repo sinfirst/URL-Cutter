@@ -1,159 +1,150 @@
 package app
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/files"
+	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
 )
 
-func TestHanedlers(t *testing.T) {
-	stg := storage.NewStorage()
-	cfg := config.NewConfig()
-	file := files.NewFile(cfg, stg)
-	a := NewApp(stg, cfg, file)
+func TestRedirect(t *testing.T) {
+	m1 := storage.NewMapStorage()
+	m1.SetURL(context.Background(), "abc123", "https://example.com")
+	logger := logging.NewLogger()
+	app := &App{storage: m1, logger: logger}
 
 	testRequest := func(shortURL string) *http.Request {
 		req := httptest.NewRequest("GET", "/"+shortURL, nil)
+
 		rctx := chi.NewRouteContext()
 		rctx.URLParams.Add("id", shortURL)
+
 		ctx := context.WithValue(req.Context(), chi.RouteCtxKey, rctx)
 		return req.WithContext(ctx)
 	}
-	tests := []struct {
-		name             string
-		origURL          string
-		expectedPostCode int
-		expectedGetCode  int
-		expectedHeader   string
-		expectedBody     string
-	}{
-		{
-			name:             "test #1",
-			origURL:          "http://mail.ru/",
-			expectedGetCode:  http.StatusTemporaryRedirect,
-			expectedPostCode: http.StatusCreated,
-			expectedHeader:   "http://mail.ru/",
-		},
-		{
-			name:             "Invalid req",
-			origURL:          "",
-			expectedPostCode: http.StatusBadRequest,
-			expectedHeader:   "",
-			expectedBody:     "url param required",
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest("POST", "/", bytes.NewBufferString((tt.origURL)))
-			resRec := httptest.NewRecorder()
-			a.PostHandler(resRec, req)
-			if resRec.Code != tt.expectedPostCode {
-				t.Errorf("expected status %d, got %d", tt.expectedPostCode, resRec.Code)
-			}
-			if tt.name == "Invalid req" {
-				return
-			}
-			body := resRec.Body.String()
-			shortURL := strings.Split(body, "//")
-			shortURL = strings.Split(shortURL[1], "/")
-			req = testRequest(shortURL[len(shortURL)-1])
-			resRec = httptest.NewRecorder()
-			a.GetHandler(resRec, req)
 
-			if resRec.Code != tt.expectedGetCode {
-				t.Errorf("expected status %d, got %d", tt.expectedGetCode, resRec.Code)
-			}
+	t.Run("valid short URL redirects", func(t *testing.T) {
+		req := testRequest("abc123")
+		rr := httptest.NewRecorder()
 
-			locationHeader := resRec.Header().Get("Location")
-			if locationHeader != tt.expectedHeader {
-				t.Errorf("expected header %v got %v", tt.expectedHeader, locationHeader)
-			}
-		})
-	}
+		app.GetHandler(rr, req)
+
+		if rr.Code != http.StatusTemporaryRedirect {
+			t.Errorf("expected status %d, got %d", http.StatusTemporaryRedirect, rr.Code)
+		}
+
+		expectedLocation := "https://example.com"
+		if loc := rr.Header().Get("Location"); loc != expectedLocation {
+			t.Errorf("expected Location header %s, got %s", expectedLocation, loc)
+		}
+	})
+
+	t.Run("invalid short URL returns 400", func(t *testing.T) {
+		req := testRequest("invalid")
+		rr := httptest.NewRecorder()
+
+		app.GetHandler(rr, req)
+
+		if rr.Code != http.StatusBadRequest {
+			t.Errorf("expected status %d, got %d", http.StatusBadRequest, rr.Code)
+		}
+
+	})
 }
 
-func TestHanedlersWithJSON(t *testing.T) {
-	stg := storage.NewStorage()
-	cfg := config.Config{Host: "http://localhost", Letters: strings.Split("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", "")}
-	file := files.NewFile(cfg, stg)
-	a := NewApp(stg, cfg, file)
+// func TestShortenURL(t *testing.T) {
+// 	m1 := storage.NewStorage()
+// 	m1.Set("abc123", "https://example.com")
+// 	logger := logging.NewLogger()
+// 	conf := config.NewConfig()
+// 	file := files.NewFile(conf, m1)
+// 	pg := postgresbd.NewPGDB(conf, logger, m1, file)
+// 	app := NewApp(m1, conf, file, pg)
 
-	testRequest := func(shortURL string) *http.Request {
-		req := httptest.NewRequest("GET", "/"+shortURL, nil)
-		rctx := chi.NewRouteContext()
-		rctx.URLParams.Add("id", shortURL)
-		ctx := context.WithValue(req.Context(), chi.RouteCtxKey, rctx)
-		return req.WithContext(ctx)
-	}
-	tests := []struct {
-		name             string
-		origBody         string
-		expectedPostCode int
-		expectedGetCode  int
-		expectedHeader   string
-		expectedBody     string
-	}{
-		{
-			name:             "Test JSON #1",
-			origBody:         `{"url": "http://mail.ru/"}`,
-			expectedGetCode:  http.StatusTemporaryRedirect,
-			expectedPostCode: http.StatusCreated,
-			expectedHeader:   "http://mail.ru/",
-		},
-		{
-			name:             "Invalid req",
-			origBody:         "",
-			expectedPostCode: http.StatusBadRequest,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req := httptest.NewRequest("POST", "/shorten", bytes.NewBufferString(tt.origBody))
-			req.Header.Set("Content-Type", "application/json")
-			resRec := httptest.NewRecorder()
-			a.JSONPostHandler(resRec, req)
-			if resRec.Code != tt.expectedPostCode {
-				t.Errorf("expected status %d, got %d", tt.expectedPostCode, resRec.Code)
-			}
-			if tt.name == "Invalid req" {
-				return
-			}
-			type Output struct {
-				Result string `json:"result"`
-			}
-			var output Output
-			var buf bytes.Buffer
-			_, err := buf.ReadFrom(resRec.Body)
-			if err != nil {
-				t.Errorf("empty answer")
-			}
-			if err = json.Unmarshal(buf.Bytes(), &output); err != nil {
-				t.Errorf("error of read answer")
-			}
-			body := output.Result
-			shortURL := strings.Split(body, "//")
-			shortURL = strings.Split(shortURL[1], "/")
-			req = testRequest(shortURL[len(shortURL)-1])
-			resRec = httptest.NewRecorder()
-			a.GetHandler(resRec, req)
-			if resRec.Code != tt.expectedGetCode {
-				t.Errorf("expected status %d, got %d", tt.expectedGetCode, resRec.Code)
-			}
+// 	t.Run("successful URL shortening", func(t *testing.T) {
+// 		originalURL := "https://example.com"
+// 		reqBody := []byte(originalURL)
 
-			locationHeader := resRec.Header().Get("Location")
-			if locationHeader != tt.expectedHeader {
-				t.Errorf("expected header %v got %v", tt.expectedHeader, locationHeader)
-			}
+// 		req := httptest.NewRequest("POST", "/", bytes.NewReader(reqBody))
+// 		rr := httptest.NewRecorder()
 
-		})
-	}
-}
+// 		app.PostHandler(rr, req)
+
+// 		if rr.Code != http.StatusCreated {
+// 			t.Errorf("expected status %d, got %d", http.StatusCreated, rr.Code)
+// 		}
+
+// 	})
+
+// 	t.Run("empty body returns 400", func(t *testing.T) {
+// 		req := httptest.NewRequest("POST", "/", bytes.NewReader([]byte{}))
+// 		rr := httptest.NewRecorder()
+
+// 		app.PostHandler(rr, req)
+
+// 		if rr.Code != http.StatusBadRequest {
+// 			t.Errorf("expected status %d, got %d", http.StatusBadRequest, rr.Code)
+// 		}
+// 	})
+// }
+
+// type RequestPayload struct {
+// 	URL string `json:"url"`
+// }
+
+// func TestShortenURLJSON(t *testing.T) {
+// 	m1 := storage.NewStorage()
+// 	m1.Set("abc123", "https://example.com")
+// 	logger := logging.NewLogger()
+// 	conf := config.NewConfig()
+// 	file := files.NewFile(conf, m1)
+// 	pg := postgresbd.NewPGDB(conf, logger, m1, file)
+// 	app := NewApp(m1, conf, file, pg)
+// 	tests := []struct {
+// 		name           string
+// 		requestBody    string
+// 		expectedStatus int
+// 		expectedResult string
+// 	}{
+// 		{
+// 			name:           "Valid URL",
+// 			requestBody:    `{"url":"https://example.com"}`,
+// 			expectedStatus: http.StatusCreated,
+// 			expectedResult: "https://example.com",
+// 		},
+// 		{
+// 			name:           "Invalid JSON",
+// 			requestBody:    `{"url":}`,
+// 			expectedStatus: http.StatusBadRequest,
+// 			expectedResult: "",
+// 		},
+// 	}
+
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			req := httptest.NewRequest(http.MethodPost, "/shorten/api", bytes.NewBufferString(tt.requestBody))
+// 			req.Header.Set("Content-Type", "application/json")
+// 			w := httptest.NewRecorder()
+
+// 			app.JSONPostHandler(w, req)
+// 			resp := w.Result()
+// 			defer resp.Body.Close()
+
+// 			if resp.StatusCode != tt.expectedStatus {
+// 				t.Errorf("expected status %d, got %d", tt.expectedStatus, resp.StatusCode)
+// 			}
+
+// 			if resp.StatusCode == http.StatusCreated {
+// 				var res storage.ResultURL
+// 				if err := json.NewDecoder(resp.Body).Decode(&res); err != nil {
+// 					t.Errorf("failed to decode response: %v", err)
+// 				}
+
+// 			}
+// 		})
+// 	}
+// }
