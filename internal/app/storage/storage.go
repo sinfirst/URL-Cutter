@@ -59,7 +59,7 @@ func NewStorage(conf config.Config, logger zap.SugaredLogger) Storage {
 	return NewMapStorage()
 }
 
-func (s *MapStorage) SetURL(ctx context.Context, key, value string, userId int) error {
+func (s *MapStorage) SetURL(ctx context.Context, key, value string, userID int) error {
 	s.data[key] = value
 	return nil
 }
