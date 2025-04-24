@@ -31,25 +31,6 @@ func NewPGDB(config config.Config, logger zap.SugaredLogger) *PGDB {
 	return &PGDB{logger: logger, db: db}
 }
 
-/*func (p *PGDB) ConnectToDB() (*pgxpool.Pool, error) {
-	db, err := pgxpool.New(p.ctx, p.config.DatabaseDsn) //sql.Open("pgx", p.config.DatabaseDsn)
-
-	if err != nil {
-		p.logger.Errorw("Problem with connecting to db ", err)
-		return nil, err
-	}
-
-	err = db.Ping(p.ctx)
-
-	if err != nil {
-		p.logger.Errorw("Problem with ping to db ", err)
-		return nil, err
-	}
-
-	p.logger.Infow("Connecting and ping to db: OK")
-	return db, nil
-}*/
-
 func (p *PGDB) GetURL(ctx context.Context, shortURL string) (string, error) {
 	var origURL string
 	row := p.db.QueryRow(ctx, `SELECT original_url FROM urls WHERE short_url = $1`, shortURL)
@@ -60,10 +41,10 @@ func (p *PGDB) GetURL(ctx context.Context, shortURL string) (string, error) {
 	return origURL, nil
 }
 
-func (p *PGDB) SetURL(ctx context.Context, shortURL, originalURL string) error {
+func (p *PGDB) SetURL(ctx context.Context, shortURL, originalURL string, userID int) error {
 
-	result, err := p.db.Exec(ctx, `INSERT INTO urls (short_url, original_url) 
-	VALUES ($1, $2) ON CONFLICT (short_url) DO NOTHING`, shortURL, originalURL)
+	result, err := p.db.Exec(ctx, `INSERT INTO urls (short_url, original_url, user_id)
+	 VALUES ($1, $2, $3) ON CONFLICT (short_url) DO NOTHING`, shortURL, originalURL, userID)
 
 	if rows := result.RowsAffected(); rows == 0 {
 		return err
@@ -76,6 +57,35 @@ func (p *PGDB) SetURL(ctx context.Context, shortURL, originalURL string) error {
 	}
 
 	return nil
+}
+
+func (p *PGDB) GetWithUserID(ctx context.Context, UserID int) (map[string]string, error) {
+	var origURL string
+	var shortURL string
+	URLs := make(map[string]string)
+
+	rows, err := p.db.Query(ctx, `SELECT original_url, short_url FROM urls WHERE user_id = $1`, UserID)
+
+	if err != nil {
+		p.logger.Fatalw("Ошибка выполнения запроса %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		err := rows.Scan(&origURL, &shortURL)
+		if err != nil {
+			p.logger.Fatalw("Ошибка сканирования строки: %v", err)
+			return nil, err
+		}
+
+		URLs[shortURL] = origURL
+	}
+
+	if origURL == "" {
+		return nil, fmt.Errorf("original url is empty")
+	}
+	return URLs, nil
 }
 
 func InitMigrations(conf config.Config, logger zap.SugaredLogger) {

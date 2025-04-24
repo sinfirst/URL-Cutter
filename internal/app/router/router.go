@@ -14,6 +14,7 @@ func NewRouter(a app.App) *chi.Mux {
 	router.With(compress.DecompressHandle).Post("/api/shorten", a.JSONPostHandler)
 	router.With(compress.CompressHandle).Get("/{id}", a.GetHandler)
 	router.With(compress.DecompressHandle).Post("/api/shorten/batch", a.BatchShortenURL)
+	router.Get("/api/user/urls", a.GetUserUrls)
 	router.Get("/ping", a.DBPing)
 	return router
 }

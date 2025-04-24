@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
+	"github.com/sinfirst/URL-Cutter/internal/app/middleware/jwtgen"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
 )
 
@@ -48,7 +49,7 @@ func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
 			CorrelationID: req.CorrelationID,
 			ShortURL:      a.config.Host + "/" + shortURL,
 		})
-		err = a.storage.SetURL(r.Context(), shortURL, req.OriginalURL)
+		err = a.storage.SetURL(r.Context(), shortURL, req.OriginalURL, 0)
 		if err != nil {
 			a.logger.Errorw("Problem with set in storage", err)
 		}
@@ -71,6 +72,30 @@ func (a *App) GetHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("token")
+	UserID := 0
+	token := ""
+
+	if err != nil {
+		token, _ = jwtgen.BuildJWTString()
+		http.SetCookie(w, &http.Cookie{
+			Name:     "token",
+			Value:    token,
+			HttpOnly: true,
+		})
+
+		// cookie.Value = token
+		fmt.Println("Coockie set!")
+		fmt.Println(token)
+	}
+	if cookie.Valid() == nil {
+		UserID = jwtgen.GetUserID(cookie.Value)
+		fmt.Println("Coockie value taken from coockie!")
+	} else {
+		UserID = jwtgen.GetUserID(token)
+		fmt.Println("Coockie value taken from token!")
+	}
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		a.logger.Errorw("Problem with read original URL")
@@ -91,7 +116,7 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
 		return
 	}
-	err = a.storage.SetURL(r.Context(), shortURL, string(body))
+	err = a.storage.SetURL(r.Context(), shortURL, string(body), UserID)
 	if err != nil {
 		a.logger.Errorw("Problem with set in storage", err)
 	}
@@ -122,7 +147,7 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(JSONResponse)
 		return
 	}
-	err = a.storage.SetURL(r.Context(), shortURL, string(input.URL))
+	err = a.storage.SetURL(r.Context(), shortURL, string(input.URL), 0)
 	if err != nil {
 		a.logger.Errorw("Problem with set in storage", err)
 	}
@@ -148,4 +173,51 @@ func (a *App) DBPing(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("token")
+	var UserID int
+	var ShorigURLs []storage.ShortenOrigURLs
+
+	if err != nil {
+		token, _ := jwtgen.BuildJWTString()
+		http.SetCookie(w, &http.Cookie{
+			Name:     "token",
+			Value:    token,
+			HttpOnly: true,
+		})
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNoContent)
+		fmt.Println("Token created at GetUserUrls!")
+		return
+	}
+	fmt.Println(cookie.Value)
+	if err := cookie.Valid(); err == nil {
+		UserID = jwtgen.GetUserID(cookie.Value)
+		fmt.Println(UserID)
+		fmt.Println("UserID collected from cookie.Value")
+	}
+
+	URLs, err := a.storage.GetWithUserID(r.Context(), UserID)
+
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	for key, value := range URLs {
+		ShorigURLs = append(ShorigURLs, storage.ShortenOrigURLs{
+			ShortURL:    a.config.Host + "/" + key,
+			OriginalURL: value,
+		})
+	}
+	var ShorigURLs1 []storage.ShortenOrigURLs
+	ShorigURLs1 = append(ShorigURLs1, ShorigURLs[len(ShorigURLs)-1])
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(ShorigURLs1)
+	if err != nil {
+		panic(err)
+	}
+
 }

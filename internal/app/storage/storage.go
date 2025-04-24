@@ -25,9 +25,16 @@ type ShortenResponceForBatch struct {
 	CorrelationID string `json:"correlation_id"`
 	ShortURL      string `json:"short_url"`
 }
+
+type ShortenOrigURLs struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
+}
+
 type Storage interface {
-	SetURL(ctx context.Context, key, value string) error
+	SetURL(ctx context.Context, key, value string, userID int) error
 	GetURL(ctx context.Context, key string) (string, error)
+	GetWithUserID(ctx context.Context, UserID int) (map[string]string, error)
 }
 
 type MapStorage struct {
@@ -52,7 +59,7 @@ func NewStorage(conf config.Config, logger zap.SugaredLogger) Storage {
 	return NewMapStorage()
 }
 
-func (s *MapStorage) SetURL(ctx context.Context, key, value string) error {
+func (s *MapStorage) SetURL(ctx context.Context, key, value string, userId int) error {
 	s.data[key] = value
 	return nil
 }
@@ -63,4 +70,7 @@ func (s *MapStorage) GetURL(ctx context.Context, key string) (string, error) {
 		return value, nil
 	}
 	return value, fmt.Errorf("not found in storage")
+}
+func (s *MapStorage) GetWithUserID(ctx context.Context, UserID int) (map[string]string, error) {
+	return nil, nil
 }
