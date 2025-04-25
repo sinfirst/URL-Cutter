@@ -17,6 +17,7 @@ import (
 )
 
 func main() {
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	DeleteCh := make(chan string, 6)
@@ -27,10 +28,6 @@ func main() {
 	a := app.NewApp(strg, conf, logger, DeleteCh)
 	router := router.NewRouter(*a)
 	workers := workers.NewDeleteWorker(ctx, db, DeleteCh, *a)
-
-	if conf.DatabaseDsn != "" {
-		postgresbd.InitMigrations(conf, logger)
-	}
 
 	server := &http.Server{Addr: conf.ServerAdress, Handler: router}
 
