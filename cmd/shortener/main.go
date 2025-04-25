@@ -1,43 +1,31 @@
 package main
 
-import (
-	"context"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-
-	"github.com/sinfirst/URL-Cutter/internal/app/app"
-	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
-	"github.com/sinfirst/URL-Cutter/internal/app/pg/postgresbd"
-	"github.com/sinfirst/URL-Cutter/internal/app/router"
-	"github.com/sinfirst/URL-Cutter/internal/app/storage"
-	"github.com/sinfirst/URL-Cutter/internal/app/workers"
-)
+import "fmt"
 
 func main() {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cancel()
-	DeleteCh := make(chan string, 6)
-	logger := logging.NewLogger()
-	conf := config.NewConfig()
-	db := postgresbd.NewPGDB(conf, logger)
-	strg := storage.NewStorage(conf, logger)
-	a := app.NewApp(strg, conf, logger, DeleteCh)
-	router := router.NewRouter(*a)
-	workers := workers.NewDeleteWorker(ctx, db, DeleteCh, *a)
+	fmt.Println("Test")
 
-	if conf.DatabaseDsn != "" {
-		postgresbd.InitMigrations(conf, logger)
-	}
+	// ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	// defer cancel()
+	// DeleteCh := make(chan string, 6)
+	// logger := logging.NewLogger()
+	// conf := config.NewConfig()
+	// db := postgresbd.NewPGDB(conf, logger)
+	// strg := storage.NewStorage(conf, logger)
+	// a := app.NewApp(strg, conf, logger, DeleteCh)
+	// router := router.NewRouter(*a)
+	// workers := workers.NewDeleteWorker(ctx, db, DeleteCh, *a)
 
-	logger.Infow("Starting server", "addr", conf.ServerAdress)
-	err := http.ListenAndServe(conf.ServerAdress, router)
+	// if conf.DatabaseDsn != "" {
+	// 	postgresbd.InitMigrations(conf, logger)
+	// }
 
-	if err != nil {
-		logger.Fatalw("Can't run server ", err)
-	}
-	workers.StopWorker()
-	a.CloseCh()
+	// logger.Infow("Starting server", "addr", conf.ServerAdress)
+	// err := http.ListenAndServe(conf.ServerAdress, router)
+
+	// if err != nil {
+	// 	logger.Fatalw("Can't run server ", err)
+	// }
+	// workers.StopWorker()
+	// a.CloseCh()
 }
