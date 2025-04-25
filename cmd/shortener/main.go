@@ -32,12 +32,20 @@ func main() {
 		postgresbd.InitMigrations(conf, logger)
 	}
 
-	logger.Infow("Starting server", "addr", conf.ServerAdress)
-	err := http.ListenAndServe(conf.ServerAdress, router)
+	server := &http.Server{Addr: conf.ServerAdress, Handler: router}
 
-	if err != nil {
-		logger.Fatalw("Can't run server ", err)
+	go func() {
+		logger.Infow("Starting server", "addr", conf.ServerAdress)
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Fatalw("create server error: ", err)
+		}
+	}()
+
+	<-ctx.Done()
+	if err := server.Shutdown(context.Background()); err != nil {
+		logger.Errorw("Server shutdown error", err)
 	}
+
 	workers.StopWorker()
 	a.CloseCh()
 }
