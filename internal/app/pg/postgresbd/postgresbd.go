@@ -59,6 +59,26 @@ func (p *PGDB) SetURL(ctx context.Context, shortURL, originalURL string, userID 
 	return nil
 }
 
+func (p *PGDB) Delete(ctx context.Context, shortURLs string) {
+	_, err := p.db.Exec(ctx, `DELETE FROM urls
+				WHERE short_url = $1`, shortURLs)
+
+	if err != nil {
+		p.logger.Errorw("Problem with deleting from db: ", err)
+		return
+	}
+}
+
+func (p *PGDB) UpdateDeleteParam(ctx context.Context, shortURLs string) {
+	_, err := p.db.Exec(ctx, `UPDATE urls
+				SET is_deleted = TRUE
+				WHERE short_url = $1`, shortURLs)
+	if err != nil {
+		p.logger.Errorw("Update table error: ", err)
+		return
+	}
+}
+
 func (p *PGDB) GetWithUserID(ctx context.Context, UserID int) (map[string]string, error) {
 	var origURL string
 	var shortURL string

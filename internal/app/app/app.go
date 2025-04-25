@@ -18,13 +18,14 @@ import (
 )
 
 type App struct {
-	storage storage.Storage
-	config  config.Config
-	logger  zap.SugaredLogger
+	storage  storage.Storage
+	config   config.Config
+	logger   zap.SugaredLogger
+	deleteCh chan string
 }
 
-func NewApp(storage storage.Storage, config config.Config, logger zap.SugaredLogger) *App {
-	app := &App{storage: storage, config: config, logger: logger}
+func NewApp(storage storage.Storage, config config.Config, logger zap.SugaredLogger, deleteCh chan string) *App {
+	app := &App{storage: storage, config: config, logger: logger, deleteCh: deleteCh}
 	return app
 }
 
@@ -73,28 +74,12 @@ func (a *App) GetHandler(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("token")
-	UserID := 0
-	token := ""
 
 	if err != nil {
-		token, _ = jwtgen.BuildJWTString()
-		http.SetCookie(w, &http.Cookie{
-			Name:     "token",
-			Value:    token,
-			HttpOnly: true,
-		})
+		fmt.Print("No token value!")
+	}
 
-		// cookie.Value = token
-		fmt.Println("Coockie set!")
-		fmt.Println(token)
-	}
-	if cookie.Valid() == nil {
-		UserID = jwtgen.GetUserID(cookie.Value)
-		fmt.Println("Coockie value taken from coockie!")
-	} else {
-		UserID = jwtgen.GetUserID(token)
-		fmt.Println("Coockie value taken from token!")
-	}
+	UserID := jwtgen.GetUserID(cookie.Value)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -110,16 +95,15 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	shortURL := fmt.Sprintf("%x", md5.Sum(body))[:8]
-	if _, err := a.storage.GetURL(r.Context(), shortURL); err == nil {
-		a.logger.Infow("Original URL already in storage")
+
+	err = a.storage.SetURL(r.Context(), shortURL, string(body), UserID)
+
+	if err != nil {
 		w.WriteHeader(http.StatusConflict)
 		fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
 		return
 	}
-	err = a.storage.SetURL(r.Context(), shortURL, string(body), UserID)
-	if err != nil {
-		a.logger.Errorw("Problem with set in storage", err)
-	}
+
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
 }
@@ -220,4 +204,36 @@ func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
+}
+
+func (a *App) DeleteUrls(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+
+	if err != nil {
+		http.Error(w, "Ошибка чтения запроса", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	var urlIDs []string
+
+	err = json.Unmarshal(body, &urlIDs)
+	if err != nil {
+		http.Error(w, "Ошибка парсинга запроса", http.StatusBadRequest)
+		return
+	}
+
+	for _, id := range urlIDs {
+		a.AddToChan(id)
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+}
+
+func (a *App) CloseCh() {
+	close(a.deleteCh)
+}
+
+func (a *App) AddToChan(id string) {
+	a.deleteCh <- id
 }
