@@ -28,11 +28,6 @@ func main() {
 	a := app.NewApp(strg, conf, logger, DeleteCh)
 	router := router.NewRouter(*a)
 	workers := workers.NewDeleteWorker(ctx, db, DeleteCh, *a)
-
-	if conf.DatabaseDsn != "" {
-		postgresbd.InitMigrations(conf, logger)
-	}
-
 	server := &http.Server{Addr: conf.ServerAdress, Handler: router}
 
 	go func() {
