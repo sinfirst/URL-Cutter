@@ -60,11 +60,9 @@ func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
 func (a *App) GetHandler(w http.ResponseWriter, r *http.Request) {
 	idGet := chi.URLParam(r, "id")
 	if origURL, err := a.storage.GetURL(r.Context(), idGet); err == nil {
-		w.Header().Set("Location", origURL)
-		w.WriteHeader(http.StatusTemporaryRedirect)
+		http.Redirect(w, r, origURL, http.StatusTemporaryRedirect)
 	} else {
-		a.logger.Infow("Can't find shortURL in storage")
-		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, "URL not found", http.StatusGone)
 	}
 }
 
