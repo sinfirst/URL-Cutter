@@ -21,6 +21,7 @@ func main() {
 	defer cancel()
 
 	DeleteCh := make(chan string, 6)
+
 	logger := logging.NewLogger()
 	conf := config.NewConfig()
 	db := postgresbd.NewPGDB(conf, logger)
