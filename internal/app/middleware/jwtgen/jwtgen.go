@@ -2,6 +2,7 @@ package jwtgen
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -11,18 +12,6 @@ type Claims struct {
 	jwt.RegisteredClaims
 	UserID int
 }
-
-// type JWTGen struct {
-// 	token_exp  time.Duration
-// 	secret_key string
-// }
-
-// func NewJWTGen() JWTGen {
-// 	return JWTGen{
-// 		token_exp:  time.Hour * 12,
-// 		secret_key: "supersecretkey",
-// 	}
-// }
 
 var tokenExp = time.Hour * 12
 
@@ -63,4 +52,22 @@ func GetUserID(tokenString string) int {
 	}
 
 	return claims.UserID
+}
+
+func AuthMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, err := r.Cookie("token")
+
+		if err != nil {
+			token, _ := BuildJWTString()
+			cookie := &http.Cookie{
+				Name:     "token",
+				Value:    token,
+				HttpOnly: true,
+			}
+			http.SetCookie(w, cookie)
+			r.AddCookie(cookie)
+		}
+		next.ServeHTTP(w, r)
+	})
 }

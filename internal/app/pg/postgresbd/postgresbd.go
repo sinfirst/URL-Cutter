@@ -2,6 +2,7 @@ package postgresbd
 
 import (
 	"context"
+	"crypto/md5"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -16,9 +17,20 @@ import (
 	"go.uber.org/zap"
 )
 
+type ShortenRequest struct {
+	CorrelationID string `json:"correlation_id"`
+	OriginalURL   string `json:"original_url"`
+}
+
+type ShortenResponce struct {
+	CorrelationID string `json:"correlation_id"`
+	ShortURL      string `json:"short_url"`
+}
+
 type PGDB struct {
 	logger zap.SugaredLogger
 	db     *pgxpool.Pool
+	config config.Config
 }
 
 func NewPGDB(config config.Config, logger zap.SugaredLogger) *PGDB {
@@ -28,13 +40,91 @@ func NewPGDB(config config.Config, logger zap.SugaredLogger) *PGDB {
 		logger.Errorw("Problem with connecting to db ", err)
 		return nil
 	}
-	return &PGDB{logger: logger, db: db}
+	return &PGDB{logger: logger, db: db, config: config}
+}
+
+func (p *PGDB) Ping(ctx context.Context) error {
+	err := p.db.Ping(ctx)
+
+	if err != nil {
+		p.logger.Errorw("Problem with ping to db: ", err)
+		return err
+	}
+
+	return nil
+}
+
+func (p *PGDB) BatchShortenURL(ctx context.Context, requests []ShortenRequest) ([]ShortenResponce, error) {
+	tx, err := p.db.Begin(ctx)
+
+	if err != nil {
+		p.logger.Errorw("Failed to start transaction", err)
+		return nil, err
+	}
+
+	defer tx.Rollback(ctx)
+
+	query := `INSERT INTO urls (short_url, original_url, user_id)
+	 VALUES ($1, $2, $3) ON CONFLICT (short_url) DO NOTHING`
+
+	var responces []ShortenResponce
+
+	for _, req := range requests {
+		shortURL := fmt.Sprintf("%x", md5.Sum([]byte(req.OriginalURL)))[:8]
+
+		_, err := tx.Exec(ctx, query, shortURL, req.OriginalURL, 0)
+
+		if err != nil {
+			p.logger.Errorw("Failed to insert data", err)
+			return nil, err
+		}
+
+		responces = append(responces, ShortenResponce{
+			CorrelationID: req.CorrelationID,
+			ShortURL:      p.config.Host + "/" + shortURL,
+		})
+
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		p.logger.Errorw("Failed to commit transaction", ctx)
+		return nil, err
+	}
+
+	return responces, nil
+}
+
+func (p *PGDB) UpdateDeleteParam(ctx context.Context, shortURLs string) {
+	query := `UPDATE urls
+				SET is_deleted = TRUE
+				WHERE short_url = $1`
+
+	_, err := p.db.Exec(ctx, query, shortURLs)
+	if err != nil {
+		p.logger.Errorw("Update table error: ", err)
+		return
+	}
+}
+
+func (p *PGDB) Delete(ctx context.Context, shortURLs string) {
+	query := `DELETE FROM urls
+				WHERE short_url = $1`
+
+	_, err := p.db.Exec(context.Background(), query, shortURLs)
+
+	if err != nil {
+		p.logger.Errorw("Problem with deleting from db: ", err)
+		return
+	}
 }
 
 func (p *PGDB) GetURL(ctx context.Context, shortURL string) (string, error) {
 	var origURL string
-	row := p.db.QueryRow(ctx, `SELECT original_url FROM urls WHERE short_url = $1`, shortURL)
+
+	query := `SELECT original_url FROM urls WHERE short_url = $1`
+	row := p.db.QueryRow(context.Background(), query, shortURL)
 	row.Scan(&origURL)
+
 	if origURL == "" {
 		return "", fmt.Errorf("not found in storage")
 	}
@@ -42,9 +132,10 @@ func (p *PGDB) GetURL(ctx context.Context, shortURL string) (string, error) {
 }
 
 func (p *PGDB) SetURL(ctx context.Context, shortURL, originalURL string, userID int) error {
+	query := `INSERT INTO urls (short_url, original_url, user_id)
+	 VALUES ($1, $2, $3) ON CONFLICT (short_url) DO NOTHING`
 
-	result, err := p.db.Exec(ctx, `INSERT INTO urls (short_url, original_url, user_id)
-	 VALUES ($1, $2, $3) ON CONFLICT (short_url) DO NOTHING`, shortURL, originalURL, userID)
+	result, err := p.db.Exec(ctx, query, shortURL, originalURL, userID)
 
 	if rows := result.RowsAffected(); rows == 0 {
 		return err
@@ -64,11 +155,11 @@ func (p *PGDB) GetWithUserID(ctx context.Context, UserID int) (map[string]string
 	var shortURL string
 	URLs := make(map[string]string)
 
-	rows, err := p.db.Query(ctx, `SELECT original_url, short_url FROM urls WHERE user_id = $1`, UserID)
+	query := `SELECT original_url, short_url FROM urls WHERE user_id = $1`
+	rows, err := p.db.Query(context.Background(), query, UserID)
 
 	if err != nil {
 		p.logger.Fatalw("Ошибка выполнения запроса %v", err)
-		return nil, err
 	}
 	defer rows.Close()
 
@@ -76,7 +167,6 @@ func (p *PGDB) GetWithUserID(ctx context.Context, UserID int) (map[string]string
 		err := rows.Scan(&origURL, &shortURL)
 		if err != nil {
 			p.logger.Fatalw("Ошибка сканирования строки: %v", err)
-			return nil, err
 		}
 
 		URLs[shortURL] = origURL

@@ -2,12 +2,13 @@
 -- +goose StatementBegin
 CREATE TABLE IF NOT EXISTS urls (
 	short_url TEXT NOT NULL PRIMARY KEY,
- 	original_url TEXT NOT NULL UNIQUE,
-	user_id INT
+ 	original_url TEXT NOT NULL,
+	user_id INT,
+	is_deleted BOOLEAN
 );
 -- +goose StatementEnd
 
 -- +goose Down
 -- +goose StatementBegin
-SELECT 'down SQL query';
+DROP TABLE urls;
 -- +goose StatementEnd
