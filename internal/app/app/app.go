@@ -60,9 +60,13 @@ func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
 func (a *App) GetHandler(w http.ResponseWriter, r *http.Request) {
 	idGet := chi.URLParam(r, "id")
 	if origURL, err := a.storage.GetURL(r.Context(), idGet); err == nil {
-		http.Redirect(w, r, origURL, http.StatusTemporaryRedirect)
-	} else {
+		w.Header().Set("Location", origURL)
+		w.WriteHeader(http.StatusTemporaryRedirect)
+	} else if err.Error() == "deleted" {
 		http.Error(w, "URL not found", http.StatusGone)
+	} else {
+		a.logger.Infow("Can't find shortURL in storage")
+		w.WriteHeader(http.StatusBadRequest)
 	}
 }
 
