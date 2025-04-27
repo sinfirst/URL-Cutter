@@ -2,6 +2,7 @@ package app
 
 import (
 	"crypto/md5"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -13,7 +14,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
 	"github.com/sinfirst/URL-Cutter/internal/app/middleware/jwtgen"
-	"github.com/sinfirst/URL-Cutter/internal/app/pg/postgresbd"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
 )
 
@@ -21,35 +21,39 @@ type App struct {
 	storage  storage.Storage
 	config   config.Config
 	logger   zap.SugaredLogger
-	db       postgresbd.PGDB
 	deleteCh chan string
 }
 
-func NewApp(storage storage.Storage, config config.Config, logger zap.SugaredLogger, db postgresbd.PGDB, deleteCh chan string) *App {
-	app := &App{storage: storage, config: config, logger: logger, db: db, deleteCh: deleteCh}
+func NewApp(storage storage.Storage, config config.Config, logger zap.SugaredLogger, deleteCh chan string) *App {
+	app := &App{storage: storage, config: config, logger: logger, deleteCh: deleteCh}
 	return app
 }
 
 func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
-	var requests []postgresbd.ShortenRequest
-
+	var requests []storage.ShortenRequestForBatch
 	err := json.NewDecoder(r.Body).Decode(&requests)
 
 	if err != nil {
-		http.Error(w, "Bad JSON data", http.StatusBadRequest)
+		a.logger.Errorw("Bad JSON data")
 		return
 	}
 
 	if len(requests) == 0 {
-		http.Error(w, "Batch cannot be empty", http.StatusBadRequest)
+		a.logger.Errorw("Batch cannot be empty")
 		return
 	}
 
-	responces, err := a.db.BatchShortenURL(r.Context(), requests)
-
-	if err != nil {
-		http.Error(w, "Failed to process request", http.StatusInternalServerError)
-		return
+	var responces []storage.ShortenResponceForBatch
+	for _, req := range requests {
+		shortURL := fmt.Sprintf("%x", md5.Sum([]byte(req.OriginalURL)))[:8]
+		responces = append(responces, storage.ShortenResponceForBatch{
+			CorrelationID: req.CorrelationID,
+			ShortURL:      a.config.Host + "/" + shortURL,
+		})
+		err = a.storage.SetURL(r.Context(), shortURL, req.OriginalURL, 0)
+		if err != nil {
+			a.logger.Errorw("Problem with set in storage", err)
+		}
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -136,12 +140,21 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) DBPing(w http.ResponseWriter, r *http.Request) {
-	err := a.db.Ping(r.Context())
-
+	db, err := sql.Open("pgx", a.config.DatabaseDsn)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Println(err)
+		http.Error(w, "Failed connect to database", http.StatusInternalServerError)
 		return
 	}
+	defer db.Close()
+
+	err = db.Ping()
+
+	if err != nil {
+		http.Error(w, "Failed ping to database", http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -169,7 +182,7 @@ func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("UserID collected from cookie.Value")
 	}
 
-	URLs, err := a.db.GetWithUserID(r.Context(), UserID)
+	URLs, err := a.storage.GetWithUserID(r.Context(), UserID)
 
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")

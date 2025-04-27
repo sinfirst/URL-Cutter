@@ -26,7 +26,7 @@ func main() {
 	conf := config.NewConfig()
 	db := postgresbd.NewPGDB(conf, logger)
 	strg := storage.NewStorage(conf, logger)
-	a := app.NewApp(strg, conf, logger, *db, DeleteCh)
+	a := app.NewApp(strg, conf, logger, DeleteCh)
 	router := router.NewRouter(*a)
 	workers := workers.NewDeleteWorker(ctx, db, DeleteCh, *a)
 	if conf.DatabaseDsn != "" {
