@@ -62,14 +62,10 @@ func (a *App) GetHandler(w http.ResponseWriter, r *http.Request) {
 	if origURL, err := a.storage.GetURL(r.Context(), idGet); err == nil {
 		w.Header().Set("Location", origURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
-	} else if err.Error() == "deleted" {
-		http.Error(w, "URL not found", http.StatusGone)
 	} else {
-		a.logger.Infow("Can't find shortURL in storage")
-		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, "URL not found", http.StatusGone)
 	}
 }
-
 func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("token")
 

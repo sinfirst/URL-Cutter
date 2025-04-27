@@ -120,14 +120,10 @@ func (p *PGDB) Delete(ctx context.Context, shortURLs string) {
 
 func (p *PGDB) GetURL(ctx context.Context, shortURL string) (string, error) {
 	var origURL string
-	var isDelete bool
 
-	query := `SELECT original_url, is_deleted FROM urls WHERE short_url = $1`
+	query := `SELECT original_url FROM urls WHERE short_url = $1`
 	row := p.db.QueryRow(context.Background(), query, shortURL)
-	row.Scan(&origURL, &isDelete)
-	if isDelete {
-		return "", fmt.Errorf("deleted")
-	}
+	row.Scan(&origURL)
 	if origURL == "" {
 		return "", fmt.Errorf("not found in storage")
 	}
