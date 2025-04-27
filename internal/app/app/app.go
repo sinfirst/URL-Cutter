@@ -89,12 +89,15 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	shortURL := fmt.Sprintf("%x", md5.Sum(body))[:8]
-
+	if _, err := a.storage.GetURL(r.Context(), shortURL); err == nil {
+		w.WriteHeader(http.StatusConflict)
+		fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
+		return
+	}
 	err = a.storage.SetURL(r.Context(), shortURL, string(body), UserID)
 
 	if err != nil {
-		w.WriteHeader(http.StatusConflict)
-		fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
+		a.logger.Errorw("Problem with set in storage", err)
 		return
 	}
 
