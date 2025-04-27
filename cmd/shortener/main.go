@@ -10,10 +10,8 @@ import (
 	"github.com/sinfirst/URL-Cutter/internal/app/app"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
 	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
-	"github.com/sinfirst/URL-Cutter/internal/app/pg/postgresbd"
 	"github.com/sinfirst/URL-Cutter/internal/app/router"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
-	"github.com/sinfirst/URL-Cutter/internal/app/workers"
 )
 
 func main() {
@@ -23,11 +21,11 @@ func main() {
 	DeleteCh := make(chan string, 6)
 	logger := logging.NewLogger()
 	conf := config.NewConfig()
-	db := postgresbd.NewPGDB(conf, logger)
+	// db := postgresbd.NewPGDB(conf, logger)
 	strg := storage.NewStorage(conf, logger)
 	a := app.NewApp(strg, conf, logger, DeleteCh)
 	router := router.NewRouter(*a)
-	workers := workers.NewDeleteWorker(ctx, db, DeleteCh, *a)
+	// workers := workers.NewDeleteWorker(ctx, db, DeleteCh, *a)
 	server := &http.Server{Addr: conf.ServerAdress, Handler: router}
 
 	go func() {
@@ -42,6 +40,6 @@ func main() {
 		logger.Errorw("Server shutdown error", err)
 	}
 
-	workers.StopWorker()
+	// workers.StopWorker()
 	a.CloseCh()
 }
