@@ -13,22 +13,24 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/storage"
+	"github.com/sinfirst/URL-Cutter/internal/app/middleware/jwtgen"
+	"github.com/sinfirst/URL-Cutter/internal/app/models"
 )
 
 type App struct {
-	storage storage.Storage
-	config  config.Config
-	logger  zap.SugaredLogger
+	storage  models.Storage
+	config   config.Config
+	logger   zap.SugaredLogger
+	deleteCh chan string
 }
 
-func NewApp(storage storage.Storage, config config.Config, logger zap.SugaredLogger) *App {
-	app := &App{storage: storage, config: config, logger: logger}
+func NewApp(storage models.Storage, config config.Config, logger zap.SugaredLogger, deleteCh chan string) *App {
+	app := &App{storage: storage, config: config, logger: logger, deleteCh: deleteCh}
 	return app
 }
 
 func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
-	var requests []storage.ShortenRequestForBatch
+	var requests []models.ShortenRequestForBatch
 	err := json.NewDecoder(r.Body).Decode(&requests)
 
 	if err != nil {
@@ -41,14 +43,14 @@ func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var responces []storage.ShortenResponceForBatch
+	var responces []models.ShortenResponceForBatch
 	for _, req := range requests {
 		shortURL := fmt.Sprintf("%x", md5.Sum([]byte(req.OriginalURL)))[:8]
-		responces = append(responces, storage.ShortenResponceForBatch{
+		responces = append(responces, models.ShortenResponceForBatch{
 			CorrelationID: req.CorrelationID,
 			ShortURL:      a.config.Host + "/" + shortURL,
 		})
-		err = a.storage.SetURL(r.Context(), shortURL, req.OriginalURL)
+		err = a.storage.SetURL(r.Context(), shortURL, req.OriginalURL, 0)
 		if err != nil {
 			a.logger.Errorw("Problem with set in storage", err)
 		}
@@ -65,43 +67,49 @@ func (a *App) GetHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Location", origURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	} else {
-		a.logger.Infow("Can't find shortURL in storage")
-		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, "URL not found", http.StatusGone)
 	}
 }
-
 func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("token")
+
+	if err != nil {
+		fmt.Print("No token value!")
+	}
+
+	UserID := jwtgen.GetUserID(cookie.Value)
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		a.logger.Errorw("Problem with read original URL")
-		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
 		return
 	}
 
-	if len(string(body)) == 0 {
-		a.logger.Errorw("Original URL is empty")
-		w.WriteHeader(http.StatusBadRequest)
+	if len(body) == 0 {
+		http.Error(w, "url param required", http.StatusBadRequest)
 		return
 	}
 
 	shortURL := fmt.Sprintf("%x", md5.Sum(body))[:8]
 	if _, err := a.storage.GetURL(r.Context(), shortURL); err == nil {
-		a.logger.Infow("Original URL already in storage")
 		w.WriteHeader(http.StatusConflict)
 		fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
 		return
 	}
-	err = a.storage.SetURL(r.Context(), shortURL, string(body))
+	err = a.storage.SetURL(r.Context(), shortURL, string(body), UserID)
+
 	if err != nil {
 		a.logger.Errorw("Problem with set in storage", err)
+		return
 	}
+
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
 }
 
 func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
-	var input storage.OriginalURL
-	var output storage.ResultURL
+	var input models.OriginalURL
+	var output models.ResultURL
 
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
@@ -109,7 +117,7 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	shortURL := fmt.Sprintf("%x", md5.Sum([]byte(input.URL)))[:8]
-	output = storage.ResultURL{Result: a.config.Host + "/" + shortURL}
+	output = models.ResultURL{Result: a.config.Host + "/" + shortURL}
 	JSONResponse, err := json.Marshal(output)
 	if err != nil {
 		a.logger.Errorw("Problem with create JSONResponse")
@@ -122,7 +130,7 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(JSONResponse)
 		return
 	}
-	err = a.storage.SetURL(r.Context(), shortURL, string(input.URL))
+	err = a.storage.SetURL(r.Context(), shortURL, string(input.URL), 0)
 	if err != nil {
 		a.logger.Errorw("Problem with set in storage", err)
 	}
@@ -148,4 +156,77 @@ func (a *App) DBPing(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("token")
+	var userID int
+	var url models.ShortenOrigURLs
+
+	if err != nil {
+		token, _ := jwtgen.BuildJWTString()
+		http.SetCookie(w, &http.Cookie{
+			Name:     "token",
+			Value:    token,
+			HttpOnly: true,
+		})
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNoContent)
+		fmt.Println("Token created at GetUserUrls!")
+		return
+	}
+	fmt.Println(cookie.Value)
+	if err := cookie.Valid(); err == nil {
+		userID = jwtgen.GetUserID(cookie.Value)
+		fmt.Println(userID)
+		fmt.Println("UserID collected from cookie.Value")
+	}
+
+	urlsFromDB, err := a.storage.GetByUserID(r.Context(), userID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	fmt.Println(urlsFromDB)
+	w.Header().Set("Content-Type", "application/json")
+	url = models.ShortenOrigURLs{OriginalURL: urlsFromDB[len(urlsFromDB)-1].OriginalURL, ShortURL: a.config.Host + "/" + urlsFromDB[len(urlsFromDB)-1].ShortURL}
+	err = json.NewEncoder(w).Encode([]models.ShortenOrigURLs{url})
+	if err != nil {
+		a.logger.Errorf("can't encode json", err)
+		return
+	}
+
+}
+
+func (a *App) DeleteUrls(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+
+	if err != nil {
+		http.Error(w, "Ошибка чтения запроса", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	var urlIDs []string
+
+	err = json.Unmarshal(body, &urlIDs)
+	if err != nil {
+		http.Error(w, "Ошибка парсинга запроса", http.StatusBadRequest)
+		return
+	}
+
+	for _, id := range urlIDs {
+		a.AddToChan(id)
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+}
+
+func (a *App) CloseCh() {
+	close(a.deleteCh)
+}
+
+func (a *App) AddToChan(id string) {
+	a.deleteCh <- id
 }

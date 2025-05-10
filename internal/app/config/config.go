@@ -27,7 +27,7 @@ func NewConfig() Config {
 		return conf
 	}
 	if conf.DatabaseDsn == "" {
-		flag.StringVar(&conf.DatabaseDsn, "d", "", "database dsn") //"postgres://postgres:12345@localhost:5432/sqlForURLCutter"
+		flag.StringVar(&conf.DatabaseDsn, "d", "", "database dsn") //"postgres://postgres:qwerty12345@localhost:5432/postgres"
 	}
 	if conf.FilePath == "" {
 		flag.StringVar(&conf.FilePath, "f", "", "path to file") //"storage.txt"
