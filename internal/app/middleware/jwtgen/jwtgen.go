@@ -44,11 +44,11 @@ func GetUserID(tokenString string) int {
 			return []byte(secretKey), nil
 		})
 	if err != nil {
-		return -1
+		return 0
 	}
 
 	if !token.Valid {
-		return -1
+		return 0
 	}
 
 	return claims.UserID
