@@ -183,7 +183,7 @@ func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 	}
 
 	URLs, err := a.storage.GetWithUserID(r.Context(), UserID)
-
+	fmt.Println(URLs)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNoContent)
