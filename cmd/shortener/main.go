@@ -19,16 +19,16 @@ import (
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-	//
-	DeleteCh := make(chan string, 6)
+
+	deleteCh := make(chan string, 6)
 
 	logger := logging.NewLogger()
 	conf := config.NewConfig()
 	db := postgresbd.NewPGDB(conf, logger)
 	strg := storage.NewStorage(conf, logger)
-	a := app.NewApp(strg, conf, logger, DeleteCh)
-	router := router.NewRouter(*a)
-	workers := workers.NewDeleteWorker(ctx, db, DeleteCh, *a)
+	a := app.NewApp(strg, conf, logger, deleteCh)
+	router := router.NewRouter(a)
+	workers := workers.NewDeleteWorker(ctx, db, deleteCh, a)
 	if conf.DatabaseDsn != "" {
 		postgresbd.InitMigrations(conf, logger)
 	}

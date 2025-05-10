@@ -8,7 +8,7 @@ import (
 	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
 )
 
-func NewRouter(a app.App) *chi.Mux {
+func NewRouter(a *app.App) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(logging.WithLogging)
 	router.With(compress.DecompressHandle, jwtgen.AuthMiddleware).Post("/", a.PostHandler)

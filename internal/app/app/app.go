@@ -160,7 +160,7 @@ func (a *App) DBPing(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("token")
-	var UserID int
+	var userID int
 	var url models.ShortenOrigURLs
 
 	if err != nil {
@@ -177,23 +177,24 @@ func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(cookie.Value)
 	if err := cookie.Valid(); err == nil {
-		UserID = jwtgen.GetUserID(cookie.Value)
-		fmt.Println(UserID)
+		userID = jwtgen.GetUserID(cookie.Value)
+		fmt.Println(userID)
 		fmt.Println("UserID collected from cookie.Value")
 	}
 
-	URLs, err := a.storage.GetByUserID(r.Context(), UserID)
+	urlsFromDB, err := a.storage.GetByUserID(r.Context(), userID)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	fmt.Println(URLs)
+	fmt.Println(urlsFromDB)
 	w.Header().Set("Content-Type", "application/json")
-	url = models.ShortenOrigURLs{OriginalURL: URLs[len(URLs)-1].OriginalURL, ShortURL: a.config.Host + "/" + URLs[len(URLs)-1].ShortURL}
+	url = models.ShortenOrigURLs{OriginalURL: urlsFromDB[len(urlsFromDB)-1].OriginalURL, ShortURL: a.config.Host + "/" + urlsFromDB[len(urlsFromDB)-1].ShortURL}
 	err = json.NewEncoder(w).Encode([]models.ShortenOrigURLs{url})
 	if err != nil {
-		panic(err)
+		a.logger.Errorf("can't encode json", err)
+		return
 	}
 
 }

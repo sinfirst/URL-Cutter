@@ -10,54 +10,52 @@ import (
 
 type Worker struct {
 	deleteCh chan string
-	DB       postgresbd.PGDB
-	ctx      context.Context
+	db       *postgresbd.PGDB
 	wg       sync.WaitGroup
-	handler  app.App
+	handler  *app.App
 }
 
-func NewDeleteWorker(ctx context.Context, DB *postgresbd.PGDB, deleteCh chan string, handler app.App) *Worker {
+func NewDeleteWorker(ctx context.Context, db *postgresbd.PGDB, deleteCh chan string, handler *app.App) *Worker {
 	worker := &Worker{
-		ctx:      ctx,
-		DB:       *DB,
+		db:       db,
 		deleteCh: deleteCh,
 		handler:  handler,
 	}
 
 	worker.wg.Add(2)
-	go worker.UpdateDeleteWorker(ctx, deleteCh)
-	go worker.DeleteWorker(ctx, deleteCh)
+	go worker.UpdateDeleteWorker(ctx)
+	go worker.DeleteWorker(ctx)
 
 	return worker
 }
 
-func (w *Worker) UpdateDeleteWorker(ctx context.Context, urlsCh <-chan string) {
+func (w *Worker) UpdateDeleteWorker(ctx context.Context) {
 	defer w.wg.Done()
 	for {
 		select {
-		case <-w.ctx.Done():
+		case <-ctx.Done():
 			return
 		case urlID, ok := <-w.deleteCh:
 			if !ok {
 				return
 			}
-			w.DB.UpdateDeleteParam(ctx, urlID)
+			w.db.UpdateDeleteParam(ctx, urlID)
 			w.handler.AddToChan(urlID)
 		}
 	}
 }
 
-func (w *Worker) DeleteWorker(ctx context.Context, urlsCh <-chan string) {
+func (w *Worker) DeleteWorker(ctx context.Context) {
 	defer w.wg.Done()
 	for {
 		select {
-		case <-w.ctx.Done():
+		case <-ctx.Done():
 			return
 		case urlID, ok := <-w.deleteCh:
 			if !ok {
 				return
 			}
-			w.DB.Delete(ctx, urlID)
+			w.db.Delete(ctx, urlID)
 		}
 	}
 }
