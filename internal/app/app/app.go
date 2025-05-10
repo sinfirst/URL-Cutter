@@ -183,7 +183,6 @@ func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 	}
 
 	URLs, err := a.storage.GetByUserID(r.Context(), UserID)
-	fmt.Println(URLs)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNoContent)
@@ -191,19 +190,19 @@ func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for key, value := range URLs {
+		clear(ShorigURLs)
 		ShorigURLs = append(ShorigURLs, models.ShortenOrigURLs{
 			ShortURL:    a.config.Host + "/" + key,
 			OriginalURL: value,
 		})
 	}
-	var ShorigURLs1 []models.ShortenOrigURLs
-	ShorigURLs1 = append(ShorigURLs1, ShorigURLs[len(ShorigURLs)-1])
+	fmt.Println(URLs)
 	fmt.Println(ShorigURLs)
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(ShorigURLs1)
+	err = json.NewEncoder(w).Encode(ShorigURLs)
 	if err != nil {
 		panic(err)
-	} //
+	}
 
 }
 
