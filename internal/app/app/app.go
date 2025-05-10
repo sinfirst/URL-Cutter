@@ -189,7 +189,7 @@ func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println(URLs)
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(URLs[len(URLs)-1])
+	err = json.NewEncoder(w).Encode([]models.ShortenOrigURLs{URLs[len(URLs)-1]})
 	if err != nil {
 		panic(err)
 	}
