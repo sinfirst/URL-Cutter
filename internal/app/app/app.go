@@ -190,7 +190,6 @@ func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for key, value := range URLs {
-		clear(ShorigURLs)
 		ShorigURLs = append(ShorigURLs, models.ShortenOrigURLs{
 			ShortURL:    a.config.Host + "/" + key,
 			OriginalURL: value,
