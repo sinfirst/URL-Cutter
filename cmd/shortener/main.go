@@ -30,7 +30,10 @@ func main() {
 	router := router.NewRouter(a)
 	workers := workers.NewDeleteWorker(ctx, db, deleteCh, a)
 	if conf.DatabaseDsn != "" {
-		postgresbd.InitMigrations(conf, logger)
+		err := postgresbd.InitMigrations(conf, logger)
+		if err != nil {
+			logger.Fatalw("can't init migrations", err)
+		}
 	}
 	server := &http.Server{Addr: conf.ServerAdress, Handler: router}
 

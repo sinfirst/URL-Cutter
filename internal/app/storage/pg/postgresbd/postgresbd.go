@@ -86,15 +86,14 @@ func (p *PGDB) SetURL(ctx context.Context, shortURL, originalURL string, userID 
 	 VALUES ($1, $2, $3) ON CONFLICT (short_url) DO NOTHING`
 
 	result, err := p.db.Exec(ctx, query, shortURL, originalURL, userID)
-
-	if rows := result.RowsAffected(); rows == 0 {
-		return err
-	}
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 			return err
 		}
+	}
+	if rows := result.RowsAffected(); rows == 0 {
+		return err
 	}
 
 	return nil
@@ -103,7 +102,7 @@ func (p *PGDB) SetURL(ctx context.Context, shortURL, originalURL string, userID 
 func (p *PGDB) GetByUserID(ctx context.Context, userID int) ([]models.ShortenOrigURLs, error) {
 	var origURL string
 	var shortURL string
-	var URLs []models.ShortenOrigURLs
+	var urls []models.ShortenOrigURLs
 
 	query := `SELECT original_url, short_url FROM urls WHERE user_id = $1`
 	rows, err := p.db.Query(ctx, query, userID)
@@ -119,22 +118,22 @@ func (p *PGDB) GetByUserID(ctx context.Context, userID int) ([]models.ShortenOri
 			p.logger.Errorw("Ошибка сканирования строки: %v", err)
 		}
 
-		URLs = append(URLs, models.ShortenOrigURLs{OriginalURL: origURL, ShortURL: shortURL})
+		urls = append(urls, models.ShortenOrigURLs{OriginalURL: origURL, ShortURL: shortURL})
 	}
 
 	if origURL == "" {
 		return nil, fmt.Errorf("original url is empty")
 	}
-	return URLs, nil
+	return urls, nil
 }
 
-func InitMigrations(conf config.Config, logger zap.SugaredLogger) {
+func InitMigrations(conf config.Config, logger zap.SugaredLogger) error {
 	logger.Infow("Start migrations")
 	db, err := sql.Open("pgx", conf.DatabaseDsn)
 
 	if err != nil {
-		logger.Fatalw("Error with connection to DB: ", err)
-		return
+		logger.Errorw("Error with connection to DB: ", err)
+		return err
 	}
 
 	defer db.Close()
@@ -144,7 +143,8 @@ func InitMigrations(conf config.Config, logger zap.SugaredLogger) {
 
 	err = goose.Up(db, migrationsPath)
 	if err != nil {
-		logger.Fatalw("Error with migrations: ", err)
-		return
+		logger.Errorw("Error with migrations: ", err)
+		return err
 	}
+	return nil
 }
