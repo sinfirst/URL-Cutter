@@ -203,7 +203,7 @@ func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(ShorigURLs1)
 	if err != nil {
 		panic(err)
-	}
+	} //
 
 }
 
