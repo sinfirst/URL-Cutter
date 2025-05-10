@@ -8,11 +8,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
-	"github.com/sinfirst/URL-Cutter/internal/app/storage"
+	"github.com/sinfirst/URL-Cutter/internal/app/storage/memory"
 )
 
 func TestRedirect(t *testing.T) {
-	m1 := storage.NewMapStorage()
+	m1 := memory.NewMapStorage()
 	m1.SetURL(context.Background(), "abc123", "https://example.com", 0)
 	logger := logging.NewLogger()
 	app := &App{storage: m1, logger: logger}

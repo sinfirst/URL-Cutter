@@ -1,51 +1,15 @@
 package storage
 
 import (
-	"context"
-	"fmt"
-
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/files"
-	"github.com/sinfirst/URL-Cutter/internal/app/pg/postgresbd"
+	"github.com/sinfirst/URL-Cutter/internal/app/models"
+	"github.com/sinfirst/URL-Cutter/internal/app/storage/files"
+	"github.com/sinfirst/URL-Cutter/internal/app/storage/memory"
+	"github.com/sinfirst/URL-Cutter/internal/app/storage/pg/postgresbd"
 	"go.uber.org/zap"
 )
 
-type OriginalURL struct {
-	URL string `json:"url"`
-}
-type ResultURL struct {
-	Result string `json:"result"`
-}
-type ShortenRequestForBatch struct {
-	CorrelationID string `json:"correlation_id"`
-	OriginalURL   string `json:"original_url"`
-}
-
-type ShortenResponceForBatch struct {
-	CorrelationID string `json:"correlation_id"`
-	ShortURL      string `json:"short_url"`
-}
-
-type ShortenOrigURLs struct {
-	ShortURL    string `json:"short_url"`
-	OriginalURL string `json:"original_url"`
-}
-
-type Storage interface {
-	SetURL(ctx context.Context, key, value string, userID int) error
-	GetURL(ctx context.Context, key string) (string, error)
-	GetByUserID(ctx context.Context, userID int) (map[string]string, error)
-}
-
-type MapStorage struct {
-	data map[string]string
-}
-
-func NewMapStorage() *MapStorage {
-	return &MapStorage{data: make(map[string]string)}
-}
-
-func NewStorage(conf config.Config, logger zap.SugaredLogger) Storage {
+func NewStorage(conf config.Config, logger zap.SugaredLogger) models.Storage {
 	if conf.DatabaseDsn != "" {
 		logger.Infow("DB config")
 		return postgresbd.NewPGDB(conf, logger)
@@ -55,21 +19,5 @@ func NewStorage(conf config.Config, logger zap.SugaredLogger) Storage {
 		return files.NewFile(conf, logger)
 	}
 	logger.Infow("memory config")
-	return NewMapStorage()
-}
-
-func (s *MapStorage) SetURL(ctx context.Context, key, value string, userID int) error {
-	s.data[key] = value
-	return nil
-}
-
-func (s *MapStorage) GetURL(ctx context.Context, key string) (string, error) {
-	value, flag := s.data[key]
-	if flag {
-		return value, nil
-	}
-	return value, fmt.Errorf("not found in storage")
-}
-func (s *MapStorage) GetByUserID(ctx context.Context, userID int) (map[string]string, error) {
-	return nil, nil
+	return memory.NewMapStorage()
 }

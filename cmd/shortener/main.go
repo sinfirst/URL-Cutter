@@ -10,9 +10,9 @@ import (
 	"github.com/sinfirst/URL-Cutter/internal/app/app"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
 	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
-	"github.com/sinfirst/URL-Cutter/internal/app/pg/postgresbd"
 	"github.com/sinfirst/URL-Cutter/internal/app/router"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage"
+	"github.com/sinfirst/URL-Cutter/internal/app/storage/pg/postgresbd"
 	"github.com/sinfirst/URL-Cutter/internal/app/workers"
 )
 

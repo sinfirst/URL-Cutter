@@ -14,23 +14,23 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
 	"github.com/sinfirst/URL-Cutter/internal/app/middleware/jwtgen"
-	"github.com/sinfirst/URL-Cutter/internal/app/storage"
+	"github.com/sinfirst/URL-Cutter/internal/app/models"
 )
 
 type App struct {
-	storage  storage.Storage
+	storage  models.Storage
 	config   config.Config
 	logger   zap.SugaredLogger
 	deleteCh chan string
 }
 
-func NewApp(storage storage.Storage, config config.Config, logger zap.SugaredLogger, deleteCh chan string) *App {
+func NewApp(storage models.Storage, config config.Config, logger zap.SugaredLogger, deleteCh chan string) *App {
 	app := &App{storage: storage, config: config, logger: logger, deleteCh: deleteCh}
 	return app
 }
 
 func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
-	var requests []storage.ShortenRequestForBatch
+	var requests []models.ShortenRequestForBatch
 	err := json.NewDecoder(r.Body).Decode(&requests)
 
 	if err != nil {
@@ -43,10 +43,10 @@ func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var responces []storage.ShortenResponceForBatch
+	var responces []models.ShortenResponceForBatch
 	for _, req := range requests {
 		shortURL := fmt.Sprintf("%x", md5.Sum([]byte(req.OriginalURL)))[:8]
-		responces = append(responces, storage.ShortenResponceForBatch{
+		responces = append(responces, models.ShortenResponceForBatch{
 			CorrelationID: req.CorrelationID,
 			ShortURL:      a.config.Host + "/" + shortURL,
 		})
@@ -108,8 +108,8 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
-	var input storage.OriginalURL
-	var output storage.ResultURL
+	var input models.OriginalURL
+	var output models.ResultURL
 
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
@@ -117,7 +117,7 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	shortURL := fmt.Sprintf("%x", md5.Sum([]byte(input.URL)))[:8]
-	output = storage.ResultURL{Result: a.config.Host + "/" + shortURL}
+	output = models.ResultURL{Result: a.config.Host + "/" + shortURL}
 	JSONResponse, err := json.Marshal(output)
 	if err != nil {
 		a.logger.Errorw("Problem with create JSONResponse")
@@ -161,7 +161,7 @@ func (a *App) DBPing(w http.ResponseWriter, r *http.Request) {
 func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("token")
 	var UserID int
-	var ShorigURLs []storage.ShortenOrigURLs
+	var ShorigURLs []models.ShortenOrigURLs
 
 	if err != nil {
 		token, _ := jwtgen.BuildJWTString()
@@ -191,12 +191,12 @@ func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for key, value := range URLs {
-		ShorigURLs = append(ShorigURLs, storage.ShortenOrigURLs{
+		ShorigURLs = append(ShorigURLs, models.ShortenOrigURLs{
 			ShortURL:    a.config.Host + "/" + key,
 			OriginalURL: value,
 		})
 	}
-	var ShorigURLs1 []storage.ShortenOrigURLs
+	var ShorigURLs1 []models.ShortenOrigURLs
 	ShorigURLs1 = append(ShorigURLs1, ShorigURLs[len(ShorigURLs)-1])
 	fmt.Println(ShorigURLs)
 	w.Header().Set("Content-Type", "application/json")

@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/sinfirst/URL-Cutter/internal/app/app"
-	"github.com/sinfirst/URL-Cutter/internal/app/pg/postgresbd"
+	"github.com/sinfirst/URL-Cutter/internal/app/storage/pg/postgresbd"
 )
 
 type Worker struct {
