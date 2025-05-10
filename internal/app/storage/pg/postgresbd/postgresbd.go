@@ -53,37 +53,26 @@ func (p *PGDB) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (p *PGDB) UpdateDeleteParam(ctx context.Context, shortURLs string) {
+func (p *PGDB) DeleteURL(ctx context.Context, shortURL string) {
 	query := `UPDATE urls
 				SET is_deleted = TRUE
 				WHERE short_url = $1`
 
-	_, err := p.db.Exec(ctx, query, shortURLs)
+	_, err := p.db.Exec(ctx, query, shortURL)
 	if err != nil {
 		p.logger.Errorw("Update table error: ", err)
 		return
 	}
 }
 
-func (p *PGDB) Delete(ctx context.Context, shortURLs string) {
-	query := `DELETE FROM urls
-				WHERE short_url = $1`
-
-	_, err := p.db.Exec(context.Background(), query, shortURLs)
-
-	if err != nil {
-		p.logger.Errorw("Problem with deleting from db: ", err)
-		return
-	}
-}
-
 func (p *PGDB) GetURL(ctx context.Context, shortURL string) (string, error) {
 	var origURL string
+	var isDeleted bool
 
-	query := `SELECT original_url FROM urls WHERE short_url = $1`
-	row := p.db.QueryRow(context.Background(), query, shortURL)
-	row.Scan(&origURL)
-	if origURL == "" {
+	query := `SELECT original_url, is_deleted FROM urls WHERE short_url = $1`
+	row := p.db.QueryRow(ctx, query, shortURL)
+	row.Scan(&origURL, &isDeleted)
+	if origURL == "" || isDeleted {
 		return "", fmt.Errorf("not found in storage")
 	}
 

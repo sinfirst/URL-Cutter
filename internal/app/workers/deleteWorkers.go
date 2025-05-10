@@ -22,9 +22,8 @@ func NewDeleteWorker(ctx context.Context, db *postgresbd.PGDB, deleteCh chan str
 		handler:  handler,
 	}
 
-	worker.wg.Add(2)
+	worker.wg.Add(1)
 	go worker.UpdateDeleteWorker(ctx)
-	go worker.DeleteWorker(ctx)
 
 	return worker
 }
@@ -39,23 +38,8 @@ func (w *Worker) UpdateDeleteWorker(ctx context.Context) {
 			if !ok {
 				return
 			}
-			w.db.UpdateDeleteParam(ctx, urlID)
+			w.db.DeleteURL(ctx, urlID)
 			w.handler.AddToChan(urlID)
-		}
-	}
-}
-
-func (w *Worker) DeleteWorker(ctx context.Context) {
-	defer w.wg.Done()
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case urlID, ok := <-w.deleteCh:
-			if !ok {
-				return
-			}
-			w.db.Delete(ctx, urlID)
 		}
 	}
 }
