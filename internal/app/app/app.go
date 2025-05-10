@@ -182,7 +182,7 @@ func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("UserID collected from cookie.Value")
 	}
 
-	URLs, err := a.storage.GetWithUserID(r.Context(), UserID)
+	URLs, err := a.storage.GetByUserID(r.Context(), UserID)
 	fmt.Println(URLs)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")

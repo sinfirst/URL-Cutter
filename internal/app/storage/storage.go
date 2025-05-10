@@ -34,7 +34,7 @@ type ShortenOrigURLs struct {
 type Storage interface {
 	SetURL(ctx context.Context, key, value string, userID int) error
 	GetURL(ctx context.Context, key string) (string, error)
-	GetWithUserID(ctx context.Context, UserID int) (map[string]string, error)
+	GetByUserID(ctx context.Context, userID int) (map[string]string, error)
 }
 
 type MapStorage struct {
@@ -70,6 +70,6 @@ func (s *MapStorage) GetURL(ctx context.Context, key string) (string, error) {
 	}
 	return value, fmt.Errorf("not found in storage")
 }
-func (s *MapStorage) GetWithUserID(ctx context.Context, UserID int) (map[string]string, error) {
+func (s *MapStorage) GetByUserID(ctx context.Context, userID int) (map[string]string, error) {
 	return nil, nil
 }

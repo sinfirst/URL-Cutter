@@ -110,6 +110,6 @@ func (f *File) GetURL(ctx context.Context, shortURL string) (string, error) {
 	return origURL, err
 }
 
-func (f *File) GetWithUserID(ctx context.Context, UserID int) (map[string]string, error) {
+func (f *File) GetByUserID(ctx context.Context, userID int) (map[string]string, error) {
 	return nil, nil
 }

@@ -108,13 +108,13 @@ func (p *PGDB) SetURL(ctx context.Context, shortURL, originalURL string, userID 
 	return nil
 }
 
-func (p *PGDB) GetWithUserID(ctx context.Context, UserID int) (map[string]string, error) {
+func (p *PGDB) GetByUserID(ctx context.Context, userID int) (map[string]string, error) {
 	var origURL string
 	var shortURL string
 	URLs := make(map[string]string)
 
 	query := `SELECT original_url, short_url FROM urls WHERE user_id = $1`
-	rows, err := p.db.Query(context.Background(), query, UserID)
+	rows, err := p.db.Query(context.Background(), query, userID)
 
 	if err != nil {
 		p.logger.Fatalw("Ошибка выполнения запроса %v", err)
