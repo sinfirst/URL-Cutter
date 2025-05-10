@@ -13,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pressly/goose/v3"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
+	"github.com/sinfirst/URL-Cutter/internal/app/models"
 	"go.uber.org/zap"
 )
 
@@ -108,10 +109,10 @@ func (p *PGDB) SetURL(ctx context.Context, shortURL, originalURL string, userID 
 	return nil
 }
 
-func (p *PGDB) GetByUserID(ctx context.Context, userID int) (map[string]string, error) {
+func (p *PGDB) GetByUserID(ctx context.Context, userID int) ([]models.ShortenOrigURLs, error) {
 	var origURL string
 	var shortURL string
-	URLs := make(map[string]string)
+	var URLs []models.ShortenOrigURLs
 
 	query := `SELECT original_url, short_url FROM urls WHERE user_id = $1`
 	rows, err := p.db.Query(context.Background(), query, userID)
@@ -127,7 +128,7 @@ func (p *PGDB) GetByUserID(ctx context.Context, userID int) (map[string]string, 
 			p.logger.Fatalw("Ошибка сканирования строки: %v", err)
 		}
 
-		URLs[shortURL] = origURL
+		URLs = append(URLs, models.ShortenOrigURLs{OriginalURL: origURL, ShortURL: shortURL})
 	}
 
 	if origURL == "" {

@@ -26,5 +26,5 @@ type ShortenOrigURLs struct {
 type Storage interface {
 	SetURL(ctx context.Context, key, value string, userID int) error
 	GetURL(ctx context.Context, key string) (string, error)
-	GetByUserID(ctx context.Context, userID int) (map[string]string, error)
+	GetByUserID(ctx context.Context, userID int) ([]ShortenOrigURLs, error)
 }

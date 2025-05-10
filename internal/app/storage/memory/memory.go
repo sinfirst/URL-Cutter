@@ -3,6 +3,8 @@ package memory
 import (
 	"context"
 	"fmt"
+
+	"github.com/sinfirst/URL-Cutter/internal/app/models"
 )
 
 type MapStorage struct {
@@ -25,6 +27,6 @@ func (s *MapStorage) GetURL(ctx context.Context, key string) (string, error) {
 	}
 	return value, fmt.Errorf("not found in storage")
 }
-func (s *MapStorage) GetByUserID(ctx context.Context, userID int) (map[string]string, error) {
+func (s *MapStorage) GetByUserID(ctx context.Context, userID int) ([]models.ShortenOrigURLs, error) {
 	return nil, nil
 }

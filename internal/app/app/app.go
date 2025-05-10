@@ -161,7 +161,6 @@ func (a *App) DBPing(w http.ResponseWriter, r *http.Request) {
 func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("token")
 	var UserID int
-	var ShorigURLs []models.ShortenOrigURLs
 
 	if err != nil {
 		token, _ := jwtgen.BuildJWTString()
@@ -188,17 +187,9 @@ func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-
-	for key, value := range URLs {
-		ShorigURLs = append(ShorigURLs, models.ShortenOrigURLs{
-			ShortURL:    a.config.Host + "/" + key,
-			OriginalURL: value,
-		})
-	}
 	fmt.Println(URLs)
-	fmt.Println(ShorigURLs)
 	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(ShorigURLs)
+	err = json.NewEncoder(w).Encode(URLs[len(URLs)-1])
 	if err != nil {
 		panic(err)
 	}

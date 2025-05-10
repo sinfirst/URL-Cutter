@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
+	"github.com/sinfirst/URL-Cutter/internal/app/models"
 	"go.uber.org/zap"
 )
 
@@ -110,6 +111,6 @@ func (f *File) GetURL(ctx context.Context, shortURL string) (string, error) {
 	return origURL, err
 }
 
-func (f *File) GetByUserID(ctx context.Context, userID int) (map[string]string, error) {
+func (f *File) GetByUserID(ctx context.Context, userID int) ([]models.ShortenOrigURLs, error) {
 	return nil, nil
 }
