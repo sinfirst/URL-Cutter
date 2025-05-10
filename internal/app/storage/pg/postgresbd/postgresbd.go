@@ -53,26 +53,28 @@ func (p *PGDB) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (p *PGDB) DeleteURL(ctx context.Context, shortURL string) {
-	query := `UPDATE urls
-				SET is_deleted = TRUE
+func (p *PGDB) DeleteURL(ctx context.Context, shortURLs string) {
+	query := `DELETE FROM urls
 				WHERE short_url = $1`
 
-	_, err := p.db.Exec(ctx, query, shortURL)
+	_, err := p.db.Exec(ctx, query, shortURLs)
+
 	if err != nil {
-		p.logger.Errorw("Update table error: ", err)
+		p.logger.Errorw("Problem with deleting from db: ", err)
 		return
 	}
 }
 
 func (p *PGDB) GetURL(ctx context.Context, shortURL string) (string, error) {
 	var origURL string
-	var isDeleted bool
 
-	query := `SELECT original_url, is_deleted FROM urls WHERE short_url = $1`
+	query := `SELECT original_url FROM urls WHERE short_url = $1`
 	row := p.db.QueryRow(ctx, query, shortURL)
-	row.Scan(&origURL, &isDeleted)
-	if origURL == "" || isDeleted {
+	err := row.Scan(&origURL)
+	if err != nil {
+		p.logger.Infow("problem with scan", err)
+	}
+	if origURL == "" {
 		return "", fmt.Errorf("not found in storage")
 	}
 
@@ -104,17 +106,17 @@ func (p *PGDB) GetByUserID(ctx context.Context, userID int) ([]models.ShortenOri
 	var URLs []models.ShortenOrigURLs
 
 	query := `SELECT original_url, short_url FROM urls WHERE user_id = $1`
-	rows, err := p.db.Query(context.Background(), query, userID)
+	rows, err := p.db.Query(ctx, query, userID)
 
 	if err != nil {
-		p.logger.Fatalw("Ошибка выполнения запроса %v", err)
+		p.logger.Errorw("Ошибка выполнения запроса %v", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		err := rows.Scan(&origURL, &shortURL)
 		if err != nil {
-			p.logger.Fatalw("Ошибка сканирования строки: %v", err)
+			p.logger.Errorw("Ошибка сканирования строки: %v", err)
 		}
 
 		URLs = append(URLs, models.ShortenOrigURLs{OriginalURL: origURL, ShortURL: shortURL})
