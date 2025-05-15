@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 
-	"github.com/sinfirst/URL-Cutter/internal/app/app"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage/pg/postgresbd"
 )
 
@@ -12,14 +11,12 @@ type Worker struct {
 	deleteCh chan string
 	db       *postgresbd.PGDB
 	wg       sync.WaitGroup
-	handler  *app.App
 }
 
-func NewDeleteWorker(ctx context.Context, db *postgresbd.PGDB, deleteCh chan string, handler *app.App) *Worker {
+func NewDeleteWorker(ctx context.Context, db *postgresbd.PGDB, deleteCh chan string) *Worker {
 	worker := &Worker{
 		db:       db,
 		deleteCh: deleteCh,
-		handler:  handler,
 	}
 
 	worker.wg.Add(1)
@@ -38,7 +35,10 @@ func (w *Worker) DeleteWorker(ctx context.Context) {
 			if !ok {
 				return
 			}
-			w.db.DeleteURL(ctx, urlID)
+			err := w.db.DeleteURL(ctx, urlID)
+			if err != nil {
+				return
+			}
 		}
 	}
 }

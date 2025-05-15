@@ -17,16 +17,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type ShortenRequest struct {
-	CorrelationID string `json:"correlation_id"`
-	OriginalURL   string `json:"original_url"`
-}
-
-type ShortenResponce struct {
-	CorrelationID string `json:"correlation_id"`
-	ShortURL      string `json:"short_url"`
-}
-
 type PGDB struct {
 	logger zap.SugaredLogger
 	db     *pgxpool.Pool
@@ -53,7 +43,7 @@ func (p *PGDB) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (p *PGDB) DeleteURL(ctx context.Context, shortURLs string) {
+func (p *PGDB) DeleteURL(ctx context.Context, shortURLs string) error {
 	query := `DELETE FROM urls
 				WHERE short_url = $1`
 
@@ -61,8 +51,9 @@ func (p *PGDB) DeleteURL(ctx context.Context, shortURLs string) {
 
 	if err != nil {
 		p.logger.Errorw("Problem with deleting from db: ", err)
-		return
+		return err
 	}
+	return nil
 }
 
 func (p *PGDB) GetURL(ctx context.Context, shortURL string) (string, error) {
@@ -72,18 +63,18 @@ func (p *PGDB) GetURL(ctx context.Context, shortURL string) (string, error) {
 	row := p.db.QueryRow(ctx, query, shortURL)
 	err := row.Scan(&origURL)
 	if err != nil {
-		p.logger.Infow("problem with scan", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", fmt.Errorf("not found in storage")
+		}
+		p.logger.Infow("problem with scan", "error", err)
+		return "", err
 	}
-	if origURL == "" {
-		return "", fmt.Errorf("not found in storage")
-	}
-
 	return origURL, nil
 }
 
 func (p *PGDB) SetURL(ctx context.Context, shortURL, originalURL string, userID int) error {
 	query := `INSERT INTO urls (short_url, original_url, user_id)
-	 VALUES ($1, $2, $3) ON CONFLICT (short_url) DO NOTHING`
+	 VALUES ($1, $2, $3)`
 
 	result, err := p.db.Exec(ctx, query, shortURL, originalURL, userID)
 	if err != nil {
@@ -92,10 +83,10 @@ func (p *PGDB) SetURL(ctx context.Context, shortURL, originalURL string, userID 
 			return err
 		}
 	}
-	if rows := result.RowsAffected(); rows == 0 {
-		return err
+	rows := result.RowsAffected()
+	if rows == 0 {
+		return fmt.Errorf("short_url already exists")
 	}
-
 	return nil
 }
 

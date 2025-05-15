@@ -1,7 +1,5 @@
 package models
 
-import "context"
-
 type OriginalURL struct {
 	URL string `json:"url"`
 }
@@ -21,10 +19,4 @@ type ShortenResponceForBatch struct {
 type ShortenOrigURLs struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
-}
-
-type Storage interface {
-	SetURL(ctx context.Context, key, value string, userID int) error
-	GetURL(ctx context.Context, key string) (string, error)
-	GetByUserID(ctx context.Context, userID int) ([]ShortenOrigURLs, error)
 }

@@ -1,15 +1,15 @@
 package storage
 
 import (
+	"github.com/sinfirst/URL-Cutter/internal/app/app"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/models"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage/files"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage/memory"
 	"github.com/sinfirst/URL-Cutter/internal/app/storage/pg/postgresbd"
 	"go.uber.org/zap"
 )
 
-func NewStorage(conf config.Config, logger zap.SugaredLogger) models.Storage {
+func NewStorage(conf config.Config, logger zap.SugaredLogger) app.Storage {
 	if conf.DatabaseDsn != "" {
 		logger.Infow("DB config")
 		return postgresbd.NewPGDB(conf, logger)

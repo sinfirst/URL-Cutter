@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"crypto/md5"
 	"database/sql"
 	"encoding/json"
@@ -17,14 +18,20 @@ import (
 	"github.com/sinfirst/URL-Cutter/internal/app/models"
 )
 
+type Storage interface {
+	SetURL(ctx context.Context, key, value string, userID int) error
+	GetURL(ctx context.Context, key string) (string, error)
+	GetByUserID(ctx context.Context, userID int) ([]models.ShortenOrigURLs, error)
+}
+
 type App struct {
-	storage  models.Storage
+	storage  Storage
 	config   config.Config
 	logger   zap.SugaredLogger
 	deleteCh chan string
 }
 
-func NewApp(storage models.Storage, config config.Config, logger zap.SugaredLogger, deleteCh chan string) *App {
+func NewApp(storage Storage, config config.Config, logger zap.SugaredLogger, deleteCh chan string) *App {
 	app := &App{storage: storage, config: config, logger: logger, deleteCh: deleteCh}
 	return app
 }
@@ -164,7 +171,11 @@ func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 	var url models.ShortenOrigURLs
 
 	if err != nil {
-		token, _ := jwtgen.BuildJWTString()
+		token, err := jwtgen.BuildJWTString()
+		if err != nil {
+			a.logger.Errorw("can't make jwt token")
+			return
+		}
 		http.SetCookie(w, &http.Cookie{
 			Name:     "token",
 			Value:    token,
