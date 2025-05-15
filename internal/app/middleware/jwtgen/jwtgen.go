@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/sinfirst/URL-Cutter/internal/app/config"
 )
 
 type Claims struct {
@@ -13,19 +14,15 @@ type Claims struct {
 	UserID int
 }
 
-var tokenExp = time.Hour * 12
-
-var secretKey = "supersecretkey"
-
 func BuildJWTString() (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(tokenExp)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(config.TokenExp)),
 		},
 		UserID: 2,
 	})
 
-	tokenString, err := token.SignedString([]byte(secretKey))
+	tokenString, err := token.SignedString([]byte(config.SecretKey))
 
 	if err != nil {
 		return "", err
@@ -41,7 +38,7 @@ func GetUserID(tokenString string) int {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 			}
-			return []byte(secretKey), nil
+			return []byte(config.SecretKey), nil
 		})
 	if err != nil {
 		return 0
