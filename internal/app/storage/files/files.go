@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
+	"github.com/sinfirst/URL-Cutter/internal/app/models"
 	"go.uber.org/zap"
 )
 
@@ -29,7 +30,7 @@ func NewFile(config config.Config, logger zap.SugaredLogger) *File {
 	return f
 }
 
-func (f *File) SetURL(ctx context.Context, shortURL, origURL string) error { //jsonStruct JSONStruct,
+func (f *File) SetURL(ctx context.Context, shortURL, origURL string, userID int) error { //jsonStruct JSONStruct,
 
 	jsonStruct := JSONStructForFile{
 		ShortURL:    shortURL,
@@ -108,4 +109,8 @@ func (f *File) GetURL(ctx context.Context, shortURL string) (string, error) {
 	}
 
 	return origURL, err
+}
+
+func (f *File) GetByUserID(ctx context.Context, userID int) ([]models.ShortenOrigURLs, error) {
+	return nil, nil
 }
