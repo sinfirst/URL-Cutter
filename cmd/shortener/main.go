@@ -28,7 +28,7 @@ func main() {
 	strg := storage.NewStorage(conf, logger)
 	a := app.NewApp(strg, conf, logger, deleteCh)
 	router := router.NewRouter(a)
-	workers := workers.NewDeleteWorker(ctx, db, deleteCh, a)
+	workers := workers.NewDeleteWorker(ctx, db, deleteCh)
 	if conf.DatabaseDsn != "" {
 		err := postgresbd.InitMigrations(conf, logger)
 		if err != nil {
