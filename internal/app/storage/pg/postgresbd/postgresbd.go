@@ -43,11 +43,11 @@ func (p *PGDB) Ping(ctx context.Context) error {
 	return nil
 }
 
-func (p *PGDB) DeleteURL(ctx context.Context, shortURLs string) error {
+func (p *PGDB) DeleteURL(ctx context.Context, shortURL string) error {
 	query := `DELETE FROM urls
 				WHERE short_url = $1`
 
-	_, err := p.db.Exec(ctx, query, shortURLs)
+	_, err := p.db.Exec(ctx, query, shortURL)
 
 	if err != nil {
 		p.logger.Errorw("Problem with deleting from db: ", err)
