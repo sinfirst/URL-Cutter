@@ -3,22 +3,23 @@ package config
 import (
 	"flag"
 	"fmt"
-	"strings"
+	"time"
 
 	"github.com/caarlos0/env/v11"
 )
+
+var TokenExp = time.Hour * 12
+var SecretKey = "supersecretkey"
 
 type Config struct {
 	ServerAdress string `env:"SERVER_ADDRESS"`
 	Host         string `env:"BASE_URL"`
 	FilePath     string `env:"FILE_STORAGE_PATH"`
 	DatabaseDsn  string `env:"DATABASE_DSN"`
-	Letters      []string
 }
 
 func NewConfig() Config {
 	var conf Config
-	conf.Letters = strings.Split("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", "")
 	err := env.Parse(&conf)
 	if err != nil {
 		fmt.Println(err)
@@ -27,7 +28,7 @@ func NewConfig() Config {
 		return conf
 	}
 	if conf.DatabaseDsn == "" {
-		flag.StringVar(&conf.DatabaseDsn, "d", "", "database dsn") //"postgres://postgres:12345@localhost:5432/sqlForURLCutter"
+		flag.StringVar(&conf.DatabaseDsn, "d", "", "database dsn") //"postgres://postgres:qwerty12345@localhost:5432/postgres"
 	}
 	if conf.FilePath == "" {
 		flag.StringVar(&conf.FilePath, "f", "", "path to file") //"storage.txt"
