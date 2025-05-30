@@ -76,16 +76,12 @@ func (p *PGDB) SetURL(ctx context.Context, shortURL, originalURL string, userID 
 	query := `INSERT INTO urls (short_url, original_url, user_id)
 	 VALUES ($1, $2, $3)`
 
-	result, err := p.db.Exec(ctx, query, shortURL, originalURL, userID)
+	_, err := p.db.Exec(ctx, query, shortURL, originalURL, userID)
 	if err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 			return err
 		}
-	}
-	rows := result.RowsAffected()
-	if rows == 0 {
-		return fmt.Errorf("short_url already exists")
 	}
 	return nil
 }
