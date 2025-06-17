@@ -8,6 +8,7 @@ import (
 	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
 )
 
+// NewRouter описание всех эндпоинтов
 func NewRouter(a *app.App) *chi.Mux {
 	router := chi.NewRouter()
 	router.Use(logging.WithLogging)

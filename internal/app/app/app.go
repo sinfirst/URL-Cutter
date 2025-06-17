@@ -18,12 +18,14 @@ import (
 	"github.com/sinfirst/URL-Cutter/internal/app/models"
 )
 
+// Storage интерфейс для взаимодействия с хранилищем данных
 type Storage interface {
 	SetURL(ctx context.Context, key, value string, userID int) error
 	GetURL(ctx context.Context, key string) (string, error)
 	GetByUserID(ctx context.Context, userID int) ([]models.ShortenOrigURLs, error)
 }
 
+// App структура для хранения переменных
 type App struct {
 	storage  Storage
 	config   config.Config
@@ -31,11 +33,13 @@ type App struct {
 	deleteCh chan string
 }
 
+// NewApp конструктор для App
 func NewApp(storage Storage, config config.Config, logger zap.SugaredLogger, deleteCh chan string) *App {
 	app := &App{storage: storage, config: config, logger: logger, deleteCh: deleteCh}
 	return app
 }
 
+// BatchShortenURL функция для добавления группы урлов в бд
 func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
 	var requests []models.ShortenRequestForBatch
 	err := json.NewDecoder(r.Body).Decode(&requests)
@@ -68,6 +72,7 @@ func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(responces)
 }
 
+// GetHandler осуществляет редирект на полный урл, если короткий урл есть в базе
 func (a *App) GetHandler(w http.ResponseWriter, r *http.Request) {
 	idGet := chi.URLParam(r, "id")
 	if origURL, err := a.storage.GetURL(r.Context(), idGet); err == nil {
@@ -77,6 +82,8 @@ func (a *App) GetHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "URL not found", http.StatusGone)
 	}
 }
+
+// PostHandler осуществляет сокращение урла, переданного с помощью text/plain
 func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("token")
 
@@ -114,6 +121,7 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
 }
 
+// JSONPostHandler осуществляет сокращение урла, переданного с помощью JSON
 func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 	var input models.OriginalURL
 	var output models.ResultURL
@@ -146,6 +154,7 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(JSONResponse)
 }
 
+// DBPing осуществляет ping до базы данных
 func (a *App) DBPing(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("pgx", a.config.DatabaseDsn)
 	if err != nil {
@@ -165,6 +174,7 @@ func (a *App) DBPing(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// GetUserUrls по этому хендлеру получаем все урлы конкретного пользователя
 func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("token")
 	var userID int
@@ -210,6 +220,7 @@ func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// DeleteUrls удаляет запрошенные урлы
 func (a *App) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 
@@ -234,10 +245,12 @@ func (a *App) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
+// CloseCh закрывает канал, что используется для удаления урлов
 func (a *App) CloseCh() {
 	close(a.deleteCh)
 }
 
+// AddToChan добавляет данные которые нужно будет удалить из бд
 func (a *App) AddToChan(id string) {
 	a.deleteCh <- id
 }
