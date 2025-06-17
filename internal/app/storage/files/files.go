@@ -13,23 +13,27 @@ import (
 	"go.uber.org/zap"
 )
 
+// JSONStruct используется для сериализации JSON
 type JSONStructForFile struct {
 	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
 
+// File структура
 type File struct {
 	config config.Config
 	logger zap.SugaredLogger
 	UUID   int
 }
 
+// NewFile конструктор для структуры File
 func NewFile(config config.Config, logger zap.SugaredLogger) *File {
 	f := &File{config: config, logger: logger}
 	return f
 }
 
+// SetURL сохранение данных в файл
 func (f *File) SetURL(ctx context.Context, shortURL, origURL string, userID int) error { //jsonStruct JSONStruct,
 
 	jsonStruct := JSONStructForFile{
@@ -70,6 +74,7 @@ func (f *File) SetURL(ctx context.Context, shortURL, origURL string, userID int)
 	return nil
 }
 
+// GetURL получить данные из файла
 func (f *File) GetURL(ctx context.Context, shortURL string) (string, error) {
 	data := make(map[string]string)
 
@@ -111,6 +116,7 @@ func (f *File) GetURL(ctx context.Context, shortURL string) (string, error) {
 	return origURL, err
 }
 
+// GetByUserID заглушка для DataBase
 func (f *File) GetByUserID(ctx context.Context, userID int) ([]models.ShortenOrigURLs, error) {
 	return nil, nil
 }

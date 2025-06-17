@@ -9,6 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// NewStorage инициализация storage
 func NewStorage(conf config.Config, logger zap.SugaredLogger) app.Storage {
 	if conf.DatabaseDsn != "" {
 		logger.Infow("DB config")

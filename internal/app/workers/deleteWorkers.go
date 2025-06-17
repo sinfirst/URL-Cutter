@@ -7,12 +7,14 @@ import (
 	"github.com/sinfirst/URL-Cutter/internal/app/storage/pg/postgresbd"
 )
 
+// Worker структура воркера
 type Worker struct {
 	deleteCh chan string
 	db       *postgresbd.PGDB
 	wg       sync.WaitGroup
 }
 
+// NewDeleteWorker конструктор для Worker
 func NewDeleteWorker(ctx context.Context, db *postgresbd.PGDB, deleteCh chan string) *Worker {
 	worker := &Worker{
 		db:       db,
@@ -25,6 +27,7 @@ func NewDeleteWorker(ctx context.Context, db *postgresbd.PGDB, deleteCh chan str
 	return worker
 }
 
+// DeleteWorker удаляет урл из бд, взятый из канала
 func (w *Worker) DeleteWorker(ctx context.Context) {
 	defer w.wg.Done()
 	for {
@@ -43,6 +46,7 @@ func (w *Worker) DeleteWorker(ctx context.Context) {
 	}
 }
 
+// StopWorker останавливает воркеры
 func (w *Worker) StopWorker() {
 	w.wg.Wait()
 }

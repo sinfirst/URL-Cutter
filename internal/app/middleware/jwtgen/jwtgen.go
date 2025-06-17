@@ -9,11 +9,13 @@ import (
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
 )
 
+// Claims требования
 type Claims struct {
 	jwt.RegisteredClaims
 	UserID int
 }
 
+// BuildJWTString построение jwt строки по заданной строке
 func BuildJWTString() (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -31,6 +33,7 @@ func BuildJWTString() (string, error) {
 	return tokenString, nil
 }
 
+// GetUserID получить userID из jwt
 func GetUserID(tokenString string) int {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims,
@@ -51,6 +54,7 @@ func GetUserID(tokenString string) int {
 	return claims.UserID
 }
 
+// AuthMiddleware прослойка для авторизации
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, err := r.Cookie("token")
