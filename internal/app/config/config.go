@@ -10,7 +10,11 @@ import (
 )
 
 var once sync.Once
+
+// TokenExp для работы jwt
 var TokenExp = time.Hour * 12
+
+// SecretKey для работы jwt
 var SecretKey = "supersecretkey"
 
 // Config структура
