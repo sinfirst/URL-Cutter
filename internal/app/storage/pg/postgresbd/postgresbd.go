@@ -17,11 +17,13 @@ import (
 	"go.uber.org/zap"
 )
 
+// PGDB структура для хранения переменных
 type PGDB struct {
 	logger zap.SugaredLogger
 	db     *pgxpool.Pool
 }
 
+// NewPGDB конструктор для структуры
 func NewPGDB(config config.Config, logger zap.SugaredLogger) *PGDB {
 	db, err := pgxpool.New(context.Background(), config.DatabaseDsn)
 
@@ -32,6 +34,7 @@ func NewPGDB(config config.Config, logger zap.SugaredLogger) *PGDB {
 	return &PGDB{logger: logger, db: db}
 }
 
+// Ping проверка соеденения с бд
 func (p *PGDB) Ping(ctx context.Context) error {
 	err := p.db.Ping(ctx)
 
@@ -43,6 +46,7 @@ func (p *PGDB) Ping(ctx context.Context) error {
 	return nil
 }
 
+// DeleteURL функция для удаления урлов из бд
 func (p *PGDB) DeleteURL(ctx context.Context, shortURL string) error {
 	query := `DELETE FROM urls
 				WHERE short_url = $1`
@@ -56,6 +60,7 @@ func (p *PGDB) DeleteURL(ctx context.Context, shortURL string) error {
 	return nil
 }
 
+// GetURL получение данных из бд
 func (p *PGDB) GetURL(ctx context.Context, shortURL string) (string, error) {
 	var origURL string
 
@@ -72,6 +77,7 @@ func (p *PGDB) GetURL(ctx context.Context, shortURL string) (string, error) {
 	return origURL, nil
 }
 
+// SetURL сохранить урл в бд
 func (p *PGDB) SetURL(ctx context.Context, shortURL, originalURL string, userID int) error {
 	query := `INSERT INTO urls (short_url, original_url, user_id)
 	 VALUES ($1, $2, $3)`
@@ -86,6 +92,7 @@ func (p *PGDB) SetURL(ctx context.Context, shortURL, originalURL string, userID 
 	return nil
 }
 
+// GetByUserID получить урлы по userID
 func (p *PGDB) GetByUserID(ctx context.Context, userID int) ([]models.ShortenOrigURLs, error) {
 	var origURL string
 	var shortURL string
@@ -114,6 +121,7 @@ func (p *PGDB) GetByUserID(ctx context.Context, userID int) ([]models.ShortenOri
 	return urls, nil
 }
 
+// InitMigrations инициализация миграций
 func InitMigrations(conf config.Config, logger zap.SugaredLogger) error {
 	logger.Infow("Start migrations")
 	db, err := sql.Open("pgx", conf.DatabaseDsn)
