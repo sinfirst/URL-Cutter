@@ -1,3 +1,4 @@
+// Package models пакет, который хранит все используемые структуры
 package models
 
 // OriginalURL cтруктура необходимая для декодирования JSON
@@ -16,7 +17,7 @@ type ShortenRequestForBatch struct {
 	OriginalURL   string `json:"original_url"`
 }
 
-// ShortenRequestForBatch cтруктура необходимая для кодирования JSON при запросе на группу урлов
+// ShortenResponceForBatch cтруктура необходимая для кодирования JSON при запросе на группу урлов
 type ShortenResponceForBatch struct {
 	CorrelationID string `json:"correlation_id"`
 	ShortURL      string `json:"short_url"`

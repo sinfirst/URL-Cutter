@@ -1,3 +1,4 @@
+// Package jwtgen пакет с описание jwt токена и авторизацией по Cookie
 package jwtgen
 
 import (

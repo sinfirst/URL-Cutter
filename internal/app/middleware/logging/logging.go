@@ -1,3 +1,4 @@
+// Package logging пакет с описанием логирования
 package logging
 
 import (

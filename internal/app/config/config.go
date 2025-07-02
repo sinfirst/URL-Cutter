@@ -1,3 +1,4 @@
+// Package config пакет с инициализацией конфига
 package config
 
 import (
@@ -25,7 +26,7 @@ type Config struct {
 	DatabaseDsn  string `env:"DATABASE_DSN"`
 }
 
-// Конструктор для конфига
+// NewConfig конструктор для конфига
 func NewConfig() Config {
 	var conf Config
 	err := env.Parse(&conf)

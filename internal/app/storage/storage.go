@@ -1,3 +1,4 @@
+// Package storage пакет с инициализацией хранилища данных
 package storage
 
 import (
@@ -9,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// NewStorage инициализация storage
+// NewStorage инициализация storage интерфеса для хранилища данных
 func NewStorage(conf config.Config, logger zap.SugaredLogger) app.Storage {
 	if conf.DatabaseDsn != "" {
 		logger.Infow("DB config")

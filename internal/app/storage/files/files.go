@@ -1,3 +1,4 @@
+// Package files пакет с описанием работы с файловой структруй хранения данных
 package files
 
 import (
@@ -13,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// JSONStruct используется для сериализации JSON
+// JSONStructForFile используется для сериализации JSON
 type JSONStructForFile struct {
 	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`
