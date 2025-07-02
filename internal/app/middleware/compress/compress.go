@@ -1,3 +1,4 @@
+// Package compress пакет с описанием компрессии для сервиса
 package compress
 
 import (
