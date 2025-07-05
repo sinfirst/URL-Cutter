@@ -7,20 +7,21 @@ import (
 	"honnef.co/go/tools/staticcheck"
 
 	"github.com/gostaticanalysis/nilerr"
-	myAnalyzer "github.com/sinfirst/URL-Cutter/cmd/staticlint/myAnalyzer"
+	"github.com/sinfirst/URL-Cutter/cmd/staticlint/noexit"
 )
 
 func main() {
 	var analyzers []*analysis.Analyzer
 
 	for _, a := range staticcheck.Analyzers {
-		if a.Analyzer.Name[:2] == "SA" {
-			analyzers = append(analyzers, a.Analyzer)
+		if len(a.Analyzer.Name) > 1 {
+			if a.Analyzer.Name[:2] == "SA" {
+				analyzers = append(analyzers, a.Analyzer)
+			}
 		}
 	}
-
 	analyzers = append(analyzers, nilerr.Analyzer)
-	analyzers = append(analyzers, myAnalyzer.Analyzer)
+	analyzers = append(analyzers, noexit.Analyzer)
 
 	multichecker.Main(analyzers...)
 }

@@ -1,5 +1,5 @@
-// Package analyzer пакет с описание анализатора на предмет os.Exit
-package analyzer
+// Package noexit пакет с описание анализатора на предмет os.Exit
+package noexit
 
 import (
 	"go/ast"
