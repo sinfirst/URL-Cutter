@@ -1,3 +1,4 @@
+// Package postgresbd пакет с описанием работы с базой данных
 package postgresbd
 
 import (

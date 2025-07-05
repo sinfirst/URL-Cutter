@@ -1,3 +1,4 @@
+// Package workers пакет с описанием работы воркера для удаления данных из базы данных
 package workers
 
 import (

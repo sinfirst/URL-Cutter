@@ -1,3 +1,4 @@
+// Package app пакет со всеми эндпоинтами сервиса
 package app
 
 import (

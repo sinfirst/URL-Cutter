@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,7 +17,17 @@ import (
 	"github.com/sinfirst/URL-Cutter/internal/app/workers"
 )
 
+// Переменные для версии сборки
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 func main() {
+	fmt.Println("Build version:", buildVersion)
+	fmt.Println("Build date:", buildDate)
+	fmt.Println("Build commit:", buildCommit)
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 

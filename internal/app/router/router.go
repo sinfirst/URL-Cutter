@@ -1,3 +1,4 @@
+// Package router пакет с инициализацией маршутизации
 package router
 
 import (
