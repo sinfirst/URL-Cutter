@@ -14,10 +14,8 @@ func main() {
 	var analyzers []*analysis.Analyzer
 
 	for _, a := range staticcheck.Analyzers {
-		if len(a.Analyzer.Name) > 1 {
-			if len(a.Analyzer.Name) > 1 && a.Analyzer.Name[:2] == "SA" {
-				analyzers = append(analyzers, a.Analyzer)
-			}
+		if len(a.Analyzer.Name) > 1 && a.Analyzer.Name[:2] == "SA" {
+			analyzers = append(analyzers, a.Analyzer)
 		}
 	}
 	analyzers = append(analyzers, nilerr.Analyzer)

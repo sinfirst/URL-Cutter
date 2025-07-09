@@ -24,6 +24,7 @@ type Config struct {
 	Host         string `env:"BASE_URL"`
 	FilePath     string `env:"FILE_STORAGE_PATH"`
 	DatabaseDsn  string `env:"DATABASE_DSN"`
+	HTTPSEnable  bool   `env:"ENABLE_HTTPS"`
 }
 
 // NewConfig конструктор для конфига
@@ -48,6 +49,7 @@ func NewConfig() Config {
 
 		flag.StringVar(&conf.ServerAdress, "a", "localhost:8080", "server adress")
 		flag.StringVar(&conf.Host, "b", "http://localhost:8080", "host")
+		flag.BoolVar(&conf.HTTPSEnable, "s", false, "https")
 		flag.Parse()
 	})
 	return conf
