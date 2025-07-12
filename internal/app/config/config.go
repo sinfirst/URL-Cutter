@@ -2,8 +2,10 @@
 package config
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -20,11 +22,12 @@ var SecretKey = "supersecretkey"
 
 // Config структура
 type Config struct {
-	ServerAdress string `env:"SERVER_ADDRESS"`
-	Host         string `env:"BASE_URL"`
-	FilePath     string `env:"FILE_STORAGE_PATH"`
-	DatabaseDsn  string `env:"DATABASE_DSN"`
-	HTTPSEnable  bool   `env:"ENABLE_HTTPS"`
+	ServerAdress string `env:"SERVER_ADDRESS" json:"server_address"`
+	Host         string `env:"BASE_URL" json:"base_url"`
+	FilePath     string `env:"FILE_STORAGE_PATH" json:"file_storage_path"`
+	DatabaseDsn  string `env:"DATABASE_DSN" json:"database_dsn"`
+	HTTPSEnable  bool   `env:"ENABLE_HTTPS" json:"enable_https"`
+	ConfigFile   string `env:"CONFIG"`
 }
 
 // NewConfig конструктор для конфига
@@ -52,5 +55,30 @@ func NewConfig() Config {
 		flag.BoolVar(&conf.HTTPSEnable, "s", false, "https")
 		flag.Parse()
 	})
+	if conf.DatabaseDsn == "" && conf.FilePath == "" && conf.Host == "" && conf.ServerAdress == "" && conf.ConfigFile != "" {
+		conf, err := fileConfig(conf.ConfigFile)
+		if err != nil {
+			fmt.Println("error! ", err)
+		}
+		return *conf
+	}
 	return conf
+}
+
+// fileConfig сканирует конфигурационные данные из файла
+func fileConfig(path string) (*Config, error) {
+	fmt.Println("Load config from file")
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var cfg Config
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(&cfg); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
 }
