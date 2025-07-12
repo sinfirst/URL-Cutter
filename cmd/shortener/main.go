@@ -32,7 +32,7 @@ func main() {
 	certFile := "server.crt"
 	keyFile := "server.key"
 
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	defer cancel()
 
 	deleteCh := make(chan string, 6)
