@@ -1,3 +1,4 @@
+// Package compress пакет с описанием компрессии для сервиса
 package compress
 
 import (
@@ -13,10 +14,12 @@ type gzipWriter struct {
 	Writer io.Writer
 }
 
+// Write запись данных
 func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
+// CompressHandle прослойка для компресии данных
 func CompressHandle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
@@ -33,6 +36,7 @@ func CompressHandle(next http.Handler) http.Handler {
 	})
 }
 
+// DecompressHandle прослойка для декомпресии данных
 func DecompressHandle(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 

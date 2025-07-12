@@ -1,3 +1,4 @@
+// Package files пакет с описанием работы с файловой структруй хранения данных
 package files
 
 import (
@@ -9,27 +10,32 @@ import (
 	"strconv"
 
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
+	"github.com/sinfirst/URL-Cutter/internal/app/models"
 	"go.uber.org/zap"
 )
 
+// JSONStructForFile используется для сериализации JSON
 type JSONStructForFile struct {
 	UUID        string `json:"uuid"`
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
 
+// File структура
 type File struct {
 	config config.Config
 	logger zap.SugaredLogger
 	UUID   int
 }
 
+// NewFile конструктор для структуры File
 func NewFile(config config.Config, logger zap.SugaredLogger) *File {
 	f := &File{config: config, logger: logger}
 	return f
 }
 
-func (f *File) SetURL(ctx context.Context, shortURL, origURL string) error { //jsonStruct JSONStruct,
+// SetURL сохранение данных в файл
+func (f *File) SetURL(ctx context.Context, shortURL, origURL string, userID int) error { //jsonStruct JSONStruct,
 
 	jsonStruct := JSONStructForFile{
 		ShortURL:    shortURL,
@@ -69,6 +75,7 @@ func (f *File) SetURL(ctx context.Context, shortURL, origURL string) error { //j
 	return nil
 }
 
+// GetURL получить данные из файла
 func (f *File) GetURL(ctx context.Context, shortURL string) (string, error) {
 	data := make(map[string]string)
 
@@ -108,4 +115,9 @@ func (f *File) GetURL(ctx context.Context, shortURL string) (string, error) {
 	}
 
 	return origURL, err
+}
+
+// GetByUserID заглушка для DataBase
+func (f *File) GetByUserID(ctx context.Context, userID int) ([]models.ShortenOrigURLs, error) {
+	return nil, nil
 }

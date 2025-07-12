@@ -1,6 +1,8 @@
+// Package app пакет со всеми эндпоинтами сервиса
 package app
 
 import (
+	"context"
 	"crypto/md5"
 	"database/sql"
 	"encoding/json"
@@ -13,22 +15,34 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/storage"
+	"github.com/sinfirst/URL-Cutter/internal/app/middleware/jwtgen"
+	"github.com/sinfirst/URL-Cutter/internal/app/models"
 )
 
-type App struct {
-	storage storage.Storage
-	config  config.Config
-	logger  zap.SugaredLogger
+// Storage интерфейс для взаимодействия с хранилищем данных
+type Storage interface {
+	SetURL(ctx context.Context, key, value string, userID int) error
+	GetURL(ctx context.Context, key string) (string, error)
+	GetByUserID(ctx context.Context, userID int) ([]models.ShortenOrigURLs, error)
 }
 
-func NewApp(storage storage.Storage, config config.Config, logger zap.SugaredLogger) *App {
-	app := &App{storage: storage, config: config, logger: logger}
+// App структура для хранения переменных
+type App struct {
+	storage  Storage
+	config   config.Config
+	logger   zap.SugaredLogger
+	deleteCh chan string
+}
+
+// NewApp конструктор для App
+func NewApp(storage Storage, config config.Config, logger zap.SugaredLogger, deleteCh chan string) *App {
+	app := &App{storage: storage, config: config, logger: logger, deleteCh: deleteCh}
 	return app
 }
 
+// BatchShortenURL функция для добавления группы урлов в бд
 func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
-	var requests []storage.ShortenRequestForBatch
+	var requests []models.ShortenRequestForBatch
 	err := json.NewDecoder(r.Body).Decode(&requests)
 
 	if err != nil {
@@ -41,14 +55,14 @@ func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var responces []storage.ShortenResponceForBatch
+	var responces []models.ShortenResponceForBatch
 	for _, req := range requests {
 		shortURL := fmt.Sprintf("%x", md5.Sum([]byte(req.OriginalURL)))[:8]
-		responces = append(responces, storage.ShortenResponceForBatch{
+		responces = append(responces, models.ShortenResponceForBatch{
 			CorrelationID: req.CorrelationID,
 			ShortURL:      a.config.Host + "/" + shortURL,
 		})
-		err = a.storage.SetURL(r.Context(), shortURL, req.OriginalURL)
+		err = a.storage.SetURL(r.Context(), shortURL, req.OriginalURL, 0)
 		if err != nil {
 			a.logger.Errorw("Problem with set in storage", err)
 		}
@@ -59,49 +73,59 @@ func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(responces)
 }
 
+// GetHandler осуществляет редирект на полный урл, если короткий урл есть в базе
 func (a *App) GetHandler(w http.ResponseWriter, r *http.Request) {
 	idGet := chi.URLParam(r, "id")
 	if origURL, err := a.storage.GetURL(r.Context(), idGet); err == nil {
 		w.Header().Set("Location", origURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	} else {
-		a.logger.Infow("Can't find shortURL in storage")
-		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, "URL not found", http.StatusGone)
 	}
 }
 
+// PostHandler осуществляет сокращение урла, переданного с помощью text/plain
 func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("token")
+
+	if err != nil {
+		fmt.Print("No token value!")
+	}
+
+	UserID := jwtgen.GetUserID(cookie.Value)
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		a.logger.Errorw("Problem with read original URL")
-		w.WriteHeader(http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
 		return
 	}
 
-	if len(string(body)) == 0 {
-		a.logger.Errorw("Original URL is empty")
-		w.WriteHeader(http.StatusBadRequest)
+	if len(body) == 0 {
+		http.Error(w, "url param required", http.StatusBadRequest)
 		return
 	}
 
 	shortURL := fmt.Sprintf("%x", md5.Sum(body))[:8]
 	if _, err := a.storage.GetURL(r.Context(), shortURL); err == nil {
-		a.logger.Infow("Original URL already in storage")
 		w.WriteHeader(http.StatusConflict)
 		fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
 		return
 	}
-	err = a.storage.SetURL(r.Context(), shortURL, string(body))
+	err = a.storage.SetURL(r.Context(), shortURL, string(body), UserID)
+
 	if err != nil {
 		a.logger.Errorw("Problem with set in storage", err)
+		return
 	}
+
 	w.WriteHeader(http.StatusCreated)
 	fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
 }
 
+// JSONPostHandler осуществляет сокращение урла, переданного с помощью JSON
 func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
-	var input storage.OriginalURL
-	var output storage.ResultURL
+	var input models.OriginalURL
+	var output models.ResultURL
 
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
@@ -109,7 +133,7 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	shortURL := fmt.Sprintf("%x", md5.Sum([]byte(input.URL)))[:8]
-	output = storage.ResultURL{Result: a.config.Host + "/" + shortURL}
+	output = models.ResultURL{Result: a.config.Host + "/" + shortURL}
 	JSONResponse, err := json.Marshal(output)
 	if err != nil {
 		a.logger.Errorw("Problem with create JSONResponse")
@@ -122,7 +146,7 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write(JSONResponse)
 		return
 	}
-	err = a.storage.SetURL(r.Context(), shortURL, string(input.URL))
+	err = a.storage.SetURL(r.Context(), shortURL, string(input.URL), 0)
 	if err != nil {
 		a.logger.Errorw("Problem with set in storage", err)
 	}
@@ -131,6 +155,7 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(JSONResponse)
 }
 
+// DBPing осуществляет ping до базы данных
 func (a *App) DBPing(w http.ResponseWriter, r *http.Request) {
 	db, err := sql.Open("pgx", a.config.DatabaseDsn)
 	if err != nil {
@@ -148,4 +173,85 @@ func (a *App) DBPing(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+// GetUserUrls по этому хендлеру получаем все урлы конкретного пользователя
+func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("token")
+	var userID int
+	var url models.ShortenOrigURLs
+
+	if err != nil {
+		token, err := jwtgen.BuildJWTString()
+		if err != nil {
+			a.logger.Errorw("can't make jwt token")
+			return
+		}
+		http.SetCookie(w, &http.Cookie{
+			Name:     "token",
+			Value:    token,
+			HttpOnly: true,
+		})
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNoContent)
+		fmt.Println("Token created at GetUserUrls!")
+		return
+	}
+	fmt.Println(cookie.Value)
+	if err := cookie.Valid(); err == nil {
+		userID = jwtgen.GetUserID(cookie.Value)
+		fmt.Println(userID)
+		fmt.Println("UserID collected from cookie.Value")
+	}
+
+	urlsFromDB, err := a.storage.GetByUserID(r.Context(), userID)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	fmt.Println(urlsFromDB)
+	w.Header().Set("Content-Type", "application/json")
+	url = models.ShortenOrigURLs{OriginalURL: urlsFromDB[len(urlsFromDB)-1].OriginalURL, ShortURL: a.config.Host + "/" + urlsFromDB[len(urlsFromDB)-1].ShortURL}
+	err = json.NewEncoder(w).Encode([]models.ShortenOrigURLs{url})
+	if err != nil {
+		a.logger.Errorf("can't encode json", err)
+		return
+	}
+
+}
+
+// DeleteUrls удаляет запрошенные урлы
+func (a *App) DeleteUrls(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+
+	if err != nil {
+		http.Error(w, "Ошибка чтения запроса", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	var urlIDs []string
+
+	err = json.Unmarshal(body, &urlIDs)
+	if err != nil {
+		http.Error(w, "Ошибка парсинга запроса", http.StatusBadRequest)
+		return
+	}
+
+	for _, id := range urlIDs {
+		a.AddToChan(id)
+	}
+
+	w.WriteHeader(http.StatusAccepted)
+}
+
+// CloseCh закрывает канал, что используется для удаления урлов
+func (a *App) CloseCh() {
+	close(a.deleteCh)
+}
+
+// AddToChan добавляет данные которые нужно будет удалить из бд
+func (a *App) AddToChan(id string) {
+	a.deleteCh <- id
 }

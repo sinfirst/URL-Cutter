@@ -7,13 +7,14 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/sinfirst/URL-Cutter/internal/app/config"
 	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
-	"github.com/sinfirst/URL-Cutter/internal/app/storage"
+	"github.com/sinfirst/URL-Cutter/internal/app/storage/memory"
 )
 
 func TestRedirect(t *testing.T) {
-	m1 := storage.NewMapStorage()
-	m1.SetURL(context.Background(), "abc123", "https://example.com")
+	m1 := memory.NewMapStorage()
+	m1.SetURL(context.Background(), "abc123", "https://example.com", 0)
 	logger := logging.NewLogger()
 	app := &App{storage: m1, logger: logger}
 
@@ -49,11 +50,29 @@ func TestRedirect(t *testing.T) {
 
 		app.GetHandler(rr, req)
 
-		if rr.Code != http.StatusBadRequest {
-			t.Errorf("expected status %d, got %d", http.StatusBadRequest, rr.Code)
+		if rr.Code != http.StatusGone {
+			t.Errorf("expected status %d, got %d", http.StatusGone, rr.Code)
 		}
 
 	})
+}
+func BenchmarkShortenURL(b *testing.B) {
+	m1 := memory.NewMapStorage()
+	m1.SetURL(context.Background(), "abc123", "https://example.com", 0)
+	conf := config.Config{Host: "http://localhost"}
+
+	app := &App{
+		storage: m1,
+		config:  conf,
+	}
+	req := httptest.NewRequest(http.MethodPost, "/api/shorten", nil)
+	req.AddCookie(&http.Cookie{Name: "token", Value: "mock.jwt.token"})
+
+	for i := 0; i < b.N; i++ {
+		rec := httptest.NewRecorder()
+		app.PostHandler(rec, req)
+
+	}
 }
 
 // func TestShortenURL(t *testing.T) {
