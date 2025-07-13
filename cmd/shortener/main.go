@@ -32,12 +32,15 @@ func main() {
 	certFile := "server.crt"
 	keyFile := "server.key"
 
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM, syscall.SIGINT, syscall.SIGQUIT)
 	defer cancel()
 
 	deleteCh := make(chan string, 6)
 	logger := logging.NewLogger()
-	conf := config.NewConfig()
+	conf, err := config.NewConfig()
+	if err != nil {
+		logger.Fatalw("can't init config", err)
+	}
 	db := postgresbd.NewPGDB(conf, logger)
 	strg := storage.NewStorage(conf, logger)
 	a := app.NewApp(strg, conf, logger, deleteCh)
@@ -50,10 +53,10 @@ func main() {
 		}
 	}
 
-	server := &http.Server{Addr: conf.ServerAdress, Handler: router}
+	server := &http.Server{Addr: conf.ServerAddress, Handler: router}
 	if !conf.HTTPSEnable {
 		go func() {
-			logger.Infow("Starting http server", "addr", conf.ServerAdress)
+			logger.Infow("Starting http server", "addr", conf.ServerAddress)
 			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 				logger.Fatalw("create server error: ", err)
 			}

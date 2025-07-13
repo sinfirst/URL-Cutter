@@ -2,8 +2,10 @@
 package config
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"os"
 	"sync"
 	"time"
 
@@ -20,23 +22,24 @@ var SecretKey = "supersecretkey"
 
 // Config структура
 type Config struct {
-	ServerAdress string `env:"SERVER_ADDRESS"`
-	Host         string `env:"BASE_URL"`
-	FilePath     string `env:"FILE_STORAGE_PATH"`
-	DatabaseDsn  string `env:"DATABASE_DSN"`
-	HTTPSEnable  bool   `env:"ENABLE_HTTPS"`
+	ServerAddress string `env:"SERVER_ADDRESS" json:"server_address"`
+	Host          string `env:"BASE_URL" json:"base_url"`
+	FilePath      string `env:"FILE_STORAGE_PATH" json:"file_storage_path"`
+	DatabaseDsn   string `env:"DATABASE_DSN" json:"database_dsn"`
+	HTTPSEnable   bool   `env:"ENABLE_HTTPS" json:"enable_https"`
+	ConfigFile    string `env:"CONFIG"`
 }
 
 // NewConfig конструктор для конфига
-func NewConfig() Config {
+func NewConfig() (Config, error) {
 	var conf Config
 	err := env.Parse(&conf)
 	if err != nil {
-		fmt.Println(err)
+		return Config{}, err
 	}
 
-	if conf.Host != "" && conf.ServerAdress != "" {
-		return conf
+	if conf.Host != "" && conf.ServerAddress != "" {
+		return conf, nil
 	}
 	once.Do(func() {
 		if conf.DatabaseDsn == "" {
@@ -47,10 +50,35 @@ func NewConfig() Config {
 			flag.StringVar(&conf.FilePath, "f", "", "path to file") //"storage.txt"
 		}
 
-		flag.StringVar(&conf.ServerAdress, "a", "localhost:8080", "server adress")
+		flag.StringVar(&conf.ServerAddress, "a", "localhost:8080", "server adress")
 		flag.StringVar(&conf.Host, "b", "http://localhost:8080", "host")
 		flag.BoolVar(&conf.HTTPSEnable, "s", false, "https")
 		flag.Parse()
 	})
-	return conf
+	if conf.DatabaseDsn == "" && conf.FilePath == "" && conf.Host == "" && conf.ServerAddress == "" && conf.ConfigFile != "" {
+		conf, err := fileConfig(conf.ConfigFile)
+		if err != nil {
+			return Config{}, fmt.Errorf("failed to load config from file: %w", err)
+		}
+		return *conf, nil
+	}
+	return conf, nil
+}
+
+// fileConfig сканирует конфигурационные данные из файла
+func fileConfig(path string) (*Config, error) {
+	fmt.Println("Load config from file")
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var cfg Config
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(&cfg); err != nil {
+		return nil, err
+	}
+
+	return &cfg, nil
 }
