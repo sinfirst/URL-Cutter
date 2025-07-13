@@ -19,7 +19,10 @@ func ExampleApp_PostHandler() {
 	// Подготовка к выполнению запроса
 	m1 := memory.NewMapStorage()
 	m1.SetURL(context.Background(), "abc123", "https://example.com", 0)
-	conf := config.NewConfig()
+	conf, err := config.NewConfig()
+	if err != nil {
+		fmt.Println(err)
+	}
 	app := &App{
 		storage: m1,
 		config:  conf,

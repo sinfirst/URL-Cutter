@@ -22,24 +22,24 @@ var SecretKey = "supersecretkey"
 
 // Config структура
 type Config struct {
-	ServerAdress string `env:"SERVER_ADDRESS" json:"server_address"`
-	Host         string `env:"BASE_URL" json:"base_url"`
-	FilePath     string `env:"FILE_STORAGE_PATH" json:"file_storage_path"`
-	DatabaseDsn  string `env:"DATABASE_DSN" json:"database_dsn"`
-	HTTPSEnable  bool   `env:"ENABLE_HTTPS" json:"enable_https"`
-	ConfigFile   string `env:"CONFIG"`
+	ServerAddress string `env:"SERVER_ADDRESS" json:"server_address"`
+	Host          string `env:"BASE_URL" json:"base_url"`
+	FilePath      string `env:"FILE_STORAGE_PATH" json:"file_storage_path"`
+	DatabaseDsn   string `env:"DATABASE_DSN" json:"database_dsn"`
+	HTTPSEnable   bool   `env:"ENABLE_HTTPS" json:"enable_https"`
+	ConfigFile    string `env:"CONFIG"`
 }
 
 // NewConfig конструктор для конфига
-func NewConfig() Config {
+func NewConfig() (Config, error) {
 	var conf Config
 	err := env.Parse(&conf)
 	if err != nil {
-		fmt.Println(err)
+		return Config{}, err
 	}
 
-	if conf.Host != "" && conf.ServerAdress != "" {
-		return conf
+	if conf.Host != "" && conf.ServerAddress != "" {
+		return conf, nil
 	}
 	once.Do(func() {
 		if conf.DatabaseDsn == "" {
@@ -50,19 +50,19 @@ func NewConfig() Config {
 			flag.StringVar(&conf.FilePath, "f", "", "path to file") //"storage.txt"
 		}
 
-		flag.StringVar(&conf.ServerAdress, "a", "localhost:8080", "server adress")
+		flag.StringVar(&conf.ServerAddress, "a", "localhost:8080", "server adress")
 		flag.StringVar(&conf.Host, "b", "http://localhost:8080", "host")
 		flag.BoolVar(&conf.HTTPSEnable, "s", false, "https")
 		flag.Parse()
 	})
-	if conf.DatabaseDsn == "" && conf.FilePath == "" && conf.Host == "" && conf.ServerAdress == "" && conf.ConfigFile != "" {
+	if conf.DatabaseDsn == "" && conf.FilePath == "" && conf.Host == "" && conf.ServerAddress == "" && conf.ConfigFile != "" {
 		conf, err := fileConfig(conf.ConfigFile)
 		if err != nil {
-			fmt.Println("error! ", err)
+			return Config{}, fmt.Errorf("failed to load config from file: %w", err)
 		}
-		return *conf
+		return *conf, nil
 	}
-	return conf
+	return conf, nil
 }
 
 // fileConfig сканирует конфигурационные данные из файла
