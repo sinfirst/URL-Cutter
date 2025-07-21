@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/netip"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
@@ -258,5 +259,36 @@ func (a *App) AddToChan(id string) {
 }
 
 func (a *App) GetStats(w http.ResponseWriter, r *http.Request) {
+	if a.config.TrustedSubnet == "" {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
 
+	ipFromRequest := r.Header.Get("X-Real-IP")
+	ipSubnet := a.config.TrustedSubnet
+
+	ip, err := netip.ParseAddr(ipFromRequest)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+	}
+	network, err := netip.ParsePrefix(ipSubnet)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+	}
+	if ok := network.Contains(ip); !ok {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
+	countURLs, err := a.storage.GetCountURLs(r.Context())
+	if err != nil {
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+	}
+	users := jwtgen.UsersID
+
+	resp := models.ServerStats{URLs: countURLs, Users: users}
+	err = json.NewEncoder(w).Encode(resp)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
+	}
 }

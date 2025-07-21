@@ -28,3 +28,9 @@ type ShortenOrigURLs struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
+
+// ServerStats структура для эндпоинта /api/internal/stats
+type ServerStats struct {
+	URLs  int `json:"urls"`
+	Users int `json:"users"`
+}

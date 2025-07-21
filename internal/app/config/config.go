@@ -28,6 +28,7 @@ type Config struct {
 	DatabaseDsn   string `env:"DATABASE_DSN" json:"database_dsn"`
 	HTTPSEnable   bool   `env:"ENABLE_HTTPS" json:"enable_https"`
 	ConfigFile    string `env:"CONFIG"`
+	TrustedSubnet string `env:"TRUSTED_SUBNET"`
 }
 
 // NewConfig конструктор для конфига
@@ -52,7 +53,10 @@ func NewConfig() (Config, error) {
 
 		flag.StringVar(&conf.ServerAddress, "a", "localhost:8080", "server adress")
 		flag.StringVar(&conf.Host, "b", "http://localhost:8080", "host")
-		flag.BoolVar(&conf.HTTPSEnable, "s", false, "https")
+		flag.BoolVar(&conf.HTTPSEnable, "s", false, "enable https")
+		flag.StringVar(&conf.ServerAddress, "c", "", "name config file")
+		flag.StringVar(&conf.ServerAddress, "t", "", "trusted subnet")
+
 		flag.Parse()
 	})
 	if conf.DatabaseDsn == "" && conf.FilePath == "" && conf.Host == "" && conf.ServerAddress == "" && conf.ConfigFile != "" {

@@ -16,6 +16,7 @@ type Claims struct {
 	UserID int
 }
 
+// UsersID переменная для аунтификации в бд
 var UsersID int
 
 // BuildJWTString построение jwt строки по заданной строке
