@@ -44,6 +44,7 @@ func (s *MapStorage) GetByUserID(ctx context.Context, userID int) ([]models.Shor
 	return nil, nil
 }
 
+// GetCountURLs считает кол-во сокращенных URL
 func (s *MapStorage) GetCountURLs(ctx context.Context) (int, error) {
 	return len(s.data), nil
 }

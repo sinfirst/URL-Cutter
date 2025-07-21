@@ -122,6 +122,7 @@ func (p *PGDB) GetByUserID(ctx context.Context, userID int) ([]models.ShortenOri
 	return urls, nil
 }
 
+// GetCountURLs считает кол-во сокращенных URL
 func (p *PGDB) GetCountURLs(ctx context.Context) (int, error) {
 	var countURls int
 

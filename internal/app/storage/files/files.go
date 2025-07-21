@@ -122,6 +122,7 @@ func (f *File) GetByUserID(ctx context.Context, userID int) ([]models.ShortenOri
 	return nil, nil
 }
 
+// GetCountURLs считает кол-во сокращенных URL
 func (f *File) GetCountURLs(ctx context.Context) (int, error) {
 	err := os.MkdirAll(filepath.Dir(f.config.FilePath), os.ModePerm)
 

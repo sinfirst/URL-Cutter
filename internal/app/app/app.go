@@ -258,6 +258,7 @@ func (a *App) AddToChan(id string) {
 	a.deleteCh <- id
 }
 
+// GetStats получает статистику сервера(кол-во сокращенных urlов и кол-во уникальных пользователей)
 func (a *App) GetStats(w http.ResponseWriter, r *http.Request) {
 	if a.config.TrustedSubnet == "" {
 		w.WriteHeader(http.StatusForbidden)
