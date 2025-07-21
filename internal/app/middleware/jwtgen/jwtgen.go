@@ -27,6 +27,7 @@ func BuildJWTString() (string, error) {
 		},
 		UserID: UsersID + 1,
 	})
+	UsersID++
 
 	tokenString, err := token.SignedString([]byte(config.SecretKey))
 
