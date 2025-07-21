@@ -122,6 +122,19 @@ func (p *PGDB) GetByUserID(ctx context.Context, userID int) ([]models.ShortenOri
 	return urls, nil
 }
 
+func (p *PGDB) GetCountURLs(ctx context.Context) (int, error) {
+	var countURls int
+
+	query := `SELECT COUNT(1) FROM urls`
+	row := p.db.QueryRow(ctx, query)
+	err := row.Scan(&countURls)
+	if err != nil {
+		return 0, err
+	}
+
+	return countURls, err
+}
+
 // InitMigrations инициализация миграций
 func InitMigrations(conf config.Config, logger zap.SugaredLogger) error {
 	logger.Infow("Start migrations")

@@ -17,10 +17,11 @@ func NewRouter(a *app.App) *chi.Mux {
 	router.With(compress.DecompressHandle).Post("/api/shorten", a.JSONPostHandler)
 	router.With(compress.DecompressHandle).Post("/api/shorten/batch", a.BatchShortenURL)
 	router.With(compress.CompressHandle).Get("/{id}", a.GetHandler)
+	router.With(compress.CompressHandle).Get("/api/internal/stats", a.GetStats)
+
 	router.Get("/ping", a.DBPing)
 	router.Get("/api/user/urls", a.GetUserUrls)
 	router.Delete("/api/user/urls", a.DeleteUrls)
-	router.With(compress.CompressHandle).Get("/{id}", a.GetHandler)
 
 	return router
 }

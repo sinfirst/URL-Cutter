@@ -43,3 +43,7 @@ func (s *MapStorage) GetURL(ctx context.Context, key string) (string, error) {
 func (s *MapStorage) GetByUserID(ctx context.Context, userID int) ([]models.ShortenOrigURLs, error) {
 	return nil, nil
 }
+
+func (s *MapStorage) GetCountURLs(ctx context.Context) (int, error) {
+	return len(s.data), nil
+}

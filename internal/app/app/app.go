@@ -24,6 +24,7 @@ type Storage interface {
 	SetURL(ctx context.Context, key, value string, userID int) error
 	GetURL(ctx context.Context, key string) (string, error)
 	GetByUserID(ctx context.Context, userID int) ([]models.ShortenOrigURLs, error)
+	GetCountURLs(ctx context.Context) (int, error)
 }
 
 // App структура для хранения переменных
@@ -254,4 +255,8 @@ func (a *App) CloseCh() {
 // AddToChan добавляет данные которые нужно будет удалить из бд
 func (a *App) AddToChan(id string) {
 	a.deleteCh <- id
+}
+
+func (a *App) GetStats(w http.ResponseWriter, r *http.Request) {
+
 }

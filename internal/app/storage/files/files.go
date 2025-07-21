@@ -121,3 +121,29 @@ func (f *File) GetURL(ctx context.Context, shortURL string) (string, error) {
 func (f *File) GetByUserID(ctx context.Context, userID int) ([]models.ShortenOrigURLs, error) {
 	return nil, nil
 }
+
+func (f *File) GetCountURLs(ctx context.Context) (int, error) {
+	err := os.MkdirAll(filepath.Dir(f.config.FilePath), os.ModePerm)
+
+	if err != nil {
+		return 0, err
+	}
+
+	file, err := os.OpenFile(f.config.FilePath, os.O_RDONLY|os.O_CREATE, 06666)
+
+	if err != nil {
+		f.logger.Infow("Problem with open file")
+		return 0, err
+	}
+
+	f.logger.Infow("created file in direction: " + f.config.FilePath)
+
+	defer file.Close()
+
+	fileScanner := bufio.NewScanner(file)
+	countURLs := 0
+	for fileScanner.Scan() {
+		countURLs++
+	}
+	return countURLs, nil
+}

@@ -16,13 +16,15 @@ type Claims struct {
 	UserID int
 }
 
+var UsersID int
+
 // BuildJWTString построение jwt строки по заданной строке
 func BuildJWTString() (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(config.TokenExp)),
 		},
-		UserID: 2,
+		UserID: UsersID + 1,
 	})
 
 	tokenString, err := token.SignedString([]byte(config.SecretKey))
