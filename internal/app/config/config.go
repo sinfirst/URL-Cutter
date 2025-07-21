@@ -54,7 +54,7 @@ func NewConfig() (Config, error) {
 		flag.StringVar(&conf.ServerAddress, "a", "localhost:8080", "server adress")
 		flag.StringVar(&conf.Host, "b", "http://localhost:8080", "host")
 		flag.BoolVar(&conf.HTTPSEnable, "s", false, "enable https")
-		flag.StringVar(&conf.ServerAddress, "c", "", "name config file")
+		flag.StringVar(&conf.ServerAddress, "c", "config.json", "name config file")
 		flag.StringVar(&conf.ServerAddress, "t", "", "trusted subnet")
 
 		flag.Parse()
