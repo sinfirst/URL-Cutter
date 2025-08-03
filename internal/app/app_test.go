@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
-	"github.com/sinfirst/URL-Cutter/internal/app/storage/memory"
+	"github.com/sinfirst/URL-Cutter/internal/config"
+	"github.com/sinfirst/URL-Cutter/internal/middleware/logging"
+	"github.com/sinfirst/URL-Cutter/internal/storage/memory"
 )
 
 func TestRedirect(t *testing.T) {

@@ -8,13 +8,13 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/sinfirst/URL-Cutter/internal/app/app"
-	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
-	"github.com/sinfirst/URL-Cutter/internal/app/router"
-	"github.com/sinfirst/URL-Cutter/internal/app/storage"
-	"github.com/sinfirst/URL-Cutter/internal/app/storage/pg/postgresbd"
-	"github.com/sinfirst/URL-Cutter/internal/app/workers"
+	"github.com/sinfirst/URL-Cutter/internal/app"
+	"github.com/sinfirst/URL-Cutter/internal/config"
+	"github.com/sinfirst/URL-Cutter/internal/middleware/logging"
+	"github.com/sinfirst/URL-Cutter/internal/router"
+	"github.com/sinfirst/URL-Cutter/internal/storage"
+	"github.com/sinfirst/URL-Cutter/internal/storage/pg/postgresbd"
+	"github.com/sinfirst/URL-Cutter/internal/workers"
 )
 
 // Переменные для версии сборки

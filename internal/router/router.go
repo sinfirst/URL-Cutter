@@ -3,10 +3,10 @@ package router
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/sinfirst/URL-Cutter/internal/app/app"
-	"github.com/sinfirst/URL-Cutter/internal/app/middleware/compress"
-	"github.com/sinfirst/URL-Cutter/internal/app/middleware/jwtgen"
-	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
+	"github.com/sinfirst/URL-Cutter/internal/app"
+	"github.com/sinfirst/URL-Cutter/internal/middleware/compress"
+	"github.com/sinfirst/URL-Cutter/internal/middleware/jwtgen"
+	"github.com/sinfirst/URL-Cutter/internal/middleware/logging"
 )
 
 // NewRouter описание всех эндпоинтов

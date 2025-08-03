@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/sinfirst/URL-Cutter/internal/app/models"
+	"github.com/sinfirst/URL-Cutter/internal/models"
 )
 
 // MapStorage структура

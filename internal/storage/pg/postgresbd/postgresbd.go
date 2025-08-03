@@ -13,8 +13,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pressly/goose/v3"
-	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/models"
+	"github.com/sinfirst/URL-Cutter/internal/config"
+	"github.com/sinfirst/URL-Cutter/internal/models"
 	"go.uber.org/zap"
 )
 

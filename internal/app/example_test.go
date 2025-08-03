@@ -10,9 +10,9 @@ import (
 	"net/http/httptest"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/models"
-	"github.com/sinfirst/URL-Cutter/internal/app/storage/memory"
+	"github.com/sinfirst/URL-Cutter/internal/config"
+	"github.com/sinfirst/URL-Cutter/internal/models"
+	"github.com/sinfirst/URL-Cutter/internal/storage/memory"
 )
 
 func ExampleApp_PostHandler() {

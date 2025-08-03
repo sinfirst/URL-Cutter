@@ -15,9 +15,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/middleware/jwtgen"
-	"github.com/sinfirst/URL-Cutter/internal/app/models"
+	"github.com/sinfirst/URL-Cutter/internal/config"
+	"github.com/sinfirst/URL-Cutter/internal/middleware/jwtgen"
+	"github.com/sinfirst/URL-Cutter/internal/models"
 )
 
 // Storage интерфейс для взаимодействия с хранилищем данных

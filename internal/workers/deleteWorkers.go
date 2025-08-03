@@ -5,7 +5,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/sinfirst/URL-Cutter/internal/app/storage/pg/postgresbd"
+	"github.com/sinfirst/URL-Cutter/internal/storage/pg/postgresbd"
 )
 
 // Worker структура воркера
