@@ -76,7 +76,7 @@ func (h *Handler) JSONPostHandler(ctx context.Context, input models.OriginalURL)
 	}
 
 	if _, err := h.storage.GetURL(ctx, shortURL); err == nil {
-		return nil, 1, err
+		return nil, 1, nil
 	}
 
 	err = h.storage.SetURL(ctx, shortURL, string(input.URL), 0)
@@ -87,8 +87,8 @@ func (h *Handler) JSONPostHandler(ctx context.Context, input models.OriginalURL)
 	return JSONResponse, 0, nil
 }
 
-func (a *Handler) DBPing() error {
-	db, err := sql.Open("pgx", a.config.DatabaseDsn)
+func (h *Handler) DBPing() error {
+	db, err := sql.Open("pgx", h.config.DatabaseDsn)
 	if err != nil {
 		return err
 	}

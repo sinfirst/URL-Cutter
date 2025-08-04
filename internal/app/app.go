@@ -88,7 +88,7 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(shortURL))
 		return
 	} else if typeOfErr == 2 {
-		a.logger.Errorw("problem with set in storage")
+		a.logger.Errorw("problem with set in storage", err)
 		return
 	}
 
@@ -112,9 +112,9 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusConflict)
 		w.Write(JSONResponse)
 	} else if typeOfError == 2 {
-		a.logger.Errorw("problem with marshal json")
+		a.logger.Errorw("problem with marshal json", err)
 	} else if typeOfError == 3 {
-		a.logger.Errorw("problem with set in storage")
+		a.logger.Errorw("problem with set in storage", err)
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
