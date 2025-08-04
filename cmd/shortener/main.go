@@ -10,6 +10,7 @@ import (
 
 	"github.com/sinfirst/URL-Cutter/internal/app"
 	"github.com/sinfirst/URL-Cutter/internal/config"
+	"github.com/sinfirst/URL-Cutter/internal/handlers"
 	"github.com/sinfirst/URL-Cutter/internal/middleware/logging"
 	"github.com/sinfirst/URL-Cutter/internal/router"
 	"github.com/sinfirst/URL-Cutter/internal/storage"
@@ -43,7 +44,8 @@ func main() {
 	}
 	db := postgresbd.NewPGDB(conf, logger)
 	strg := storage.NewStorage(conf, logger)
-	a := app.NewApp(strg, conf, logger, deleteCh)
+	handlers := handlers.NewHandler(strg, conf, deleteCh)
+	a := app.NewApp(logger, handlers)
 	router := router.NewRouter(a)
 	workers := workers.NewDeleteWorker(ctx, db, deleteCh)
 	if conf.DatabaseDsn != "" {
@@ -76,5 +78,5 @@ func main() {
 		logger.Errorw("Server shutdown error", err)
 	}
 	workers.StopWorker()
-	a.CloseCh()
+	close(deleteCh)
 }

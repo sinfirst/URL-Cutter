@@ -2,43 +2,29 @@
 package app
 
 import (
-	"context"
-	"crypto/md5"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
-	"net/netip"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/sinfirst/URL-Cutter/internal/config"
+	"github.com/sinfirst/URL-Cutter/internal/handlers"
 	"github.com/sinfirst/URL-Cutter/internal/middleware/jwtgen"
 	"github.com/sinfirst/URL-Cutter/internal/models"
 )
 
-// Storage интерфейс для взаимодействия с хранилищем данных
-type Storage interface {
-	SetURL(ctx context.Context, key, value string, userID int) error
-	GetURL(ctx context.Context, key string) (string, error)
-	GetByUserID(ctx context.Context, userID int) ([]models.ShortenOrigURLs, error)
-	GetCountURLs(ctx context.Context) (int, error)
-}
-
 // App структура для хранения переменных
 type App struct {
-	storage  Storage
-	config   config.Config
-	logger   zap.SugaredLogger
-	deleteCh chan string
+	logger  zap.SugaredLogger
+	handler handlers.Handler
 }
 
 // NewApp конструктор для App
-func NewApp(storage Storage, config config.Config, logger zap.SugaredLogger, deleteCh chan string) *App {
-	app := &App{storage: storage, config: config, logger: logger, deleteCh: deleteCh}
+func NewApp(logger zap.SugaredLogger, handler handlers.Handler) *App {
+	app := &App{logger: logger, handler: handler}
 	return app
 }
 
@@ -56,29 +42,19 @@ func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
 		a.logger.Errorw("Batch cannot be empty")
 		return
 	}
-
-	var responces []models.ShortenResponceForBatch
-	for _, req := range requests {
-		shortURL := fmt.Sprintf("%x", md5.Sum([]byte(req.OriginalURL)))[:8]
-		responces = append(responces, models.ShortenResponceForBatch{
-			CorrelationID: req.CorrelationID,
-			ShortURL:      a.config.Host + "/" + shortURL,
-		})
-		err = a.storage.SetURL(r.Context(), shortURL, req.OriginalURL, 0)
-		if err != nil {
-			a.logger.Errorw("Problem with set in storage", err)
-		}
+	resp, err := a.handler.BatchShortenURL(r.Context(), requests)
+	if err != nil {
+		a.logger.Errorw("Problem with set in storage", err)
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(responces)
+	json.NewEncoder(w).Encode(resp)
 }
 
 // GetHandler осуществляет редирект на полный урл, если короткий урл есть в базе
 func (a *App) GetHandler(w http.ResponseWriter, r *http.Request) {
 	idGet := chi.URLParam(r, "id")
-	if origURL, err := a.storage.GetURL(r.Context(), idGet); err == nil {
+	if origURL, err := a.handler.GetHandler(r.Context(), idGet); err == nil {
 		w.Header().Set("Location", origURL)
 		w.WriteHeader(http.StatusTemporaryRedirect)
 	} else {
@@ -106,51 +82,39 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "url param required", http.StatusBadRequest)
 		return
 	}
-
-	shortURL := fmt.Sprintf("%x", md5.Sum(body))[:8]
-	if _, err := a.storage.GetURL(r.Context(), shortURL); err == nil {
+	shortURL, typeOfErr, err := a.handler.PostHandler(r.Context(), body, UserID)
+	if typeOfErr == 1 {
 		w.WriteHeader(http.StatusConflict)
-		fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
+		w.Write([]byte(shortURL))
 		return
-	}
-	err = a.storage.SetURL(r.Context(), shortURL, string(body), UserID)
-
-	if err != nil {
-		a.logger.Errorw("Problem with set in storage", err)
+	} else if typeOfErr == 2 {
+		a.logger.Errorw("problem with set in storage")
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, "%s/%s", a.config.Host, shortURL)
+	w.Write([]byte(shortURL))
 }
 
 // JSONPostHandler осуществляет сокращение урла, переданного с помощью JSON
 func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 	var input models.OriginalURL
-	var output models.ResultURL
 
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
 		a.logger.Errorw("Bad JSON OriginalURL")
 		return
 	}
-	shortURL := fmt.Sprintf("%x", md5.Sum([]byte(input.URL)))[:8]
-	output = models.ResultURL{Result: a.config.Host + "/" + shortURL}
-	JSONResponse, err := json.Marshal(output)
-	if err != nil {
-		a.logger.Errorw("Problem with create JSONResponse")
-		return
-	}
-	if _, err := a.storage.GetURL(r.Context(), shortURL); err == nil {
-		a.logger.Infow("Original URL already in storage")
+
+	JSONResponse, typeOfError, err := a.handler.JSONPostHandler(r.Context(), input)
+	if typeOfError == 1 {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
 		w.Write(JSONResponse)
-		return
-	}
-	err = a.storage.SetURL(r.Context(), shortURL, string(input.URL), 0)
-	if err != nil {
-		a.logger.Errorw("Problem with set in storage", err)
+	} else if typeOfError == 2 {
+		a.logger.Errorw("problem with marshal json")
+	} else if typeOfError == 3 {
+		a.logger.Errorw("problem with set in storage")
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -159,21 +123,11 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 
 // DBPing осуществляет ping до базы данных
 func (a *App) DBPing(w http.ResponseWriter, r *http.Request) {
-	db, err := sql.Open("pgx", a.config.DatabaseDsn)
+	err := a.handler.DBPing()
 	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Failed connect to database", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer db.Close()
-
-	err = db.Ping()
-
-	if err != nil {
-		http.Error(w, "Failed ping to database", http.StatusInternalServerError)
-		return
-	}
-
 	w.WriteHeader(http.StatusOK)
 }
 
@@ -181,7 +135,6 @@ func (a *App) DBPing(w http.ResponseWriter, r *http.Request) {
 func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("token")
 	var userID int
-	var url models.ShortenOrigURLs
 
 	if err != nil {
 		token, err := jwtgen.BuildJWTString()
@@ -205,17 +158,14 @@ func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(userID)
 		fmt.Println("UserID collected from cookie.Value")
 	}
-
-	urlsFromDB, err := a.storage.GetByUserID(r.Context(), userID)
+	urls, err := a.handler.GetUserUrls(r.Context(), userID)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
-	fmt.Println(urlsFromDB)
 	w.Header().Set("Content-Type", "application/json")
-	url = models.ShortenOrigURLs{OriginalURL: urlsFromDB[len(urlsFromDB)-1].OriginalURL, ShortURL: a.config.Host + "/" + urlsFromDB[len(urlsFromDB)-1].ShortURL}
-	err = json.NewEncoder(w).Encode([]models.ShortenOrigURLs{url})
+	err = json.NewEncoder(w).Encode(urls)
 	if err != nil {
 		a.logger.Errorf("can't encode json", err)
 		return
@@ -233,61 +183,23 @@ func (a *App) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	var urlIDs []string
-
-	err = json.Unmarshal(body, &urlIDs)
+	err = a.handler.DeleteUrls(body)
 	if err != nil {
-		http.Error(w, "Ошибка парсинга запроса", http.StatusBadRequest)
-		return
+		a.logger.Errorw("Ошибка парсинга json")
 	}
-
-	for _, id := range urlIDs {
-		a.AddToChan(id)
-	}
-
 	w.WriteHeader(http.StatusAccepted)
-}
-
-// CloseCh закрывает канал, что используется для удаления урлов
-func (a *App) CloseCh() {
-	close(a.deleteCh)
-}
-
-// AddToChan добавляет данные которые нужно будет удалить из бд
-func (a *App) AddToChan(id string) {
-	a.deleteCh <- id
 }
 
 // GetStats получает статистику сервера(кол-во сокращенных urlов и кол-во уникальных пользователей)
 func (a *App) GetStats(w http.ResponseWriter, r *http.Request) {
-	if a.config.TrustedSubnet == "" {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-
 	ipFromRequest := r.Header.Get("X-Real-IP")
-	ipSubnet := a.config.TrustedSubnet
-
-	ip, err := netip.ParseAddr(ipFromRequest)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
-	}
-	network, err := netip.ParsePrefix(ipSubnet)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
-	}
-	if ok := network.Contains(ip); !ok {
+	resp, typeOfError, err := a.handler.GetStats(r.Context(), ipFromRequest)
+	if typeOfError == 1 {
 		w.WriteHeader(http.StatusForbidden)
 		return
-	}
-
-	countURLs, err := a.storage.GetCountURLs(r.Context())
-	if err != nil {
+	} else if typeOfError == 2 {
 		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
 	}
-	users := jwtgen.UsersID
-
-	resp := models.ServerStats{URLs: countURLs, Users: users}
 	err = json.NewEncoder(w).Encode(resp)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)

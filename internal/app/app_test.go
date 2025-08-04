@@ -2,12 +2,14 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/sinfirst/URL-Cutter/internal/config"
+	"github.com/sinfirst/URL-Cutter/internal/handlers"
 	"github.com/sinfirst/URL-Cutter/internal/middleware/logging"
 	"github.com/sinfirst/URL-Cutter/internal/storage/memory"
 )
@@ -15,8 +17,15 @@ import (
 func TestRedirect(t *testing.T) {
 	m1 := memory.NewMapStorage()
 	m1.SetURL(context.Background(), "abc123", "https://example.com", 0)
+	conf, err := config.NewConfig()
+	if err != nil {
+		fmt.Println("error compile config")
+	}
 	logger := logging.NewLogger()
-	app := &App{storage: m1, logger: logger}
+	delCh := make(chan string, 6)
+	defer close(delCh)
+	handler := handlers.NewHandler(m1, conf, make(chan string, 6))
+	app := &App{logger: logger, handler: handler}
 
 	testRequest := func(shortURL string) *http.Request {
 		req := httptest.NewRequest("GET", "/"+shortURL, nil)
@@ -60,11 +69,10 @@ func BenchmarkShortenURL(b *testing.B) {
 	m1 := memory.NewMapStorage()
 	m1.SetURL(context.Background(), "abc123", "https://example.com", 0)
 	conf := config.Config{Host: "http://localhost"}
-
-	app := &App{
-		storage: m1,
-		config:  conf,
-	}
+	delCh := make(chan string, 6)
+	defer close(delCh)
+	handler := handlers.NewHandler(m1, conf, delCh)
+	app := &App{handler: handler}
 	req := httptest.NewRequest(http.MethodPost, "/api/shorten", nil)
 	req.AddCookie(&http.Cookie{Name: "token", Value: "mock.jwt.token"})
 
