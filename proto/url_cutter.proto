@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package urlCutter;
+
+option go_package = ".;";
+
+
+message PostHandlerRequest {
+  string url = 1;
+}
+
+message PostHandlerResponse {
+  string short_url = 1;
+  string error = 2; // ошибка
+}
+
+service URLCutter {
+  rpc Pos(PostHandlerRequest) returns (PostHandlerResponse);
+
+}

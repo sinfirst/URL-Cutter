@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -10,12 +12,15 @@ import (
 
 	"github.com/sinfirst/URL-Cutter/internal/app"
 	"github.com/sinfirst/URL-Cutter/internal/config"
+	"github.com/sinfirst/URL-Cutter/internal/grpc_server"
 	"github.com/sinfirst/URL-Cutter/internal/handlers"
 	"github.com/sinfirst/URL-Cutter/internal/middleware/logging"
 	"github.com/sinfirst/URL-Cutter/internal/router"
 	"github.com/sinfirst/URL-Cutter/internal/storage"
 	"github.com/sinfirst/URL-Cutter/internal/storage/pg/postgresbd"
 	"github.com/sinfirst/URL-Cutter/internal/workers"
+	pb "github.com/sinfirst/URL-Cutter/proto/url_cutter"
+	"google.golang.org/grpc"
 )
 
 // Переменные для версии сборки
@@ -71,6 +76,17 @@ func main() {
 				logger.Fatal("error while start server: ", err)
 			}
 		}()
+	}
+
+	listen, err := net.Listen("tcp", ":3200")
+	if err != nil {
+		log.Fatal(err)
+	}
+	s := grpc.NewServer()
+	pb.RegisterURLCutterServer(s, grpc_server.NewURLCutterServer())
+	fmt.Println("Сервер gRPC начал работу")
+	if err := s.Serve(listen); err != nil {
+		log.Fatal(err)
 	}
 
 	<-ctx.Done()
