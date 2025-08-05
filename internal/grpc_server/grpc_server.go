@@ -2,20 +2,84 @@ package grpc_server
 
 import (
 	"context"
-	"fmt"
 
+	"github.com/sinfirst/URL-Cutter/internal/handlers"
 	pb "github.com/sinfirst/URL-Cutter/proto/url_cutter"
+	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type URLCutterServer struct {
 	pb.UnimplementedURLCutterServer
+	logger  zap.SugaredLogger
+	handler handlers.Handler
+	userId  int
 }
 
-func NewURLCutterServer() pb.URLCutterServer {
-	return &URLCutterServer{}
+func NewURLCutterServer(logger zap.SugaredLogger, handler handlers.Handler) pb.URLCutterServer {
+	return &URLCutterServer{logger: logger, handler: handler, userId: 0}
 
+}
+
+func (s *URLCutterServer) BatchShortenURL(ctx context.Context, in *pb.BatchShortenURLRequest) (*pb.BatchShortenURLResponse, error) {
+	var responces []*pb.ShortenResponseForBatch
+	for _, req := range in.ShortenRequests {
+		shortURL, err := s.handler.Shortener(ctx, req.OriginalURL, 0)
+		if err != nil {
+			s.logger.Errorw("Problem with set in storage", err)
+			return nil, err
+		}
+		responces = append(responces, &pb.ShortenResponseForBatch{
+			CorrelationID: req.CorrelationID,
+			ShortURL:      shortURL,
+		})
+	}
+	return &pb.BatchShortenURLResponse{ShortenResponses: responces}, nil
+}
+
+func (s *URLCutterServer) GetHandler(ctx context.Context, in *pb.GetHandlerRequest) (*pb.GetHandlerResponse, error) {
+	url, err := s.handler.GetHandler(ctx, in.Id)
+	return &pb.GetHandlerResponse{OrigURL: url}, err
 }
 func (s *URLCutterServer) PostHandler(ctx context.Context, in *pb.PostHandlerRequest) (*pb.PostHandlerResponse, error) {
-	fmt.Println(1)
-	return nil, nil
+	var id int
+	if in.UserID == -1 {
+		id = s.userId + 1
+		s.userId++
+	} else {
+		id = int(in.UserID)
+	}
+
+	shortURL, err := s.handler.Shortener(ctx, in.Url, id)
+	return &pb.PostHandlerResponse{ShortUrl: shortURL, UserID: int64(id)}, err
+}
+
+func (s *URLCutterServer) JSONPostHandler(ctx context.Context, in *pb.JSONPostHandlerRequest) (*pb.JSONPostHandlerResponse, error) {
+	return &pb.JSONPostHandlerResponse{}, nil
+	//
+}
+
+func (s *URLCutterServer) DBPing(ctx context.Context, in *emptypb.Empty) (*pb.DBPingResponse, error) {
+	err := s.handler.DBPing()
+	return &pb.DBPingResponse{Error: err.Error()}, err
+}
+
+func (s *URLCutterServer) GetUserUrls(ctx context.Context, in *pb.GetUserUrlsRequest) (*pb.GetUserUrlsResponse, error) {
+	var urlsForResp []*pb.ShortenOrigURLs
+	urls, err := s.handler.GetUserUrls(ctx, int(in.UserID))
+	for _, i := range urls {
+		urlsForResp = append(urlsForResp, &pb.ShortenOrigURLs{
+			ShortURL:    i.ShortURL,
+			OriginalURL: i.OriginalURL,
+		})
+	}
+	resp := pb.GetUserUrlsResponse{
+		ShortenResponse: urlsForResp,
+	}
+	return &resp, err
+}
+
+func (s *URLCutterServer) DeleteUrls(ctx context.Context, in *pb.DeleteUrlsRequest) (*pb.DeleteUrlsResponse, error) {
+	s.handler.DeleteUrls(in.Urls)
+
 }

@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -19,14 +20,28 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	URLCutter_Pos_FullMethodName = "/urlCutter.URLCutter/Pos"
+	URLCutter_BatchShortenURL_FullMethodName = "/urlCutter.URLCutter/BatchShortenURL"
+	URLCutter_GetHandler_FullMethodName      = "/urlCutter.URLCutter/GetHandler"
+	URLCutter_PostHandler_FullMethodName     = "/urlCutter.URLCutter/PostHandler"
+	URLCutter_JSONPostHandler_FullMethodName = "/urlCutter.URLCutter/JSONPostHandler"
+	URLCutter_DBPing_FullMethodName          = "/urlCutter.URLCutter/DBPing"
+	URLCutter_GetUserUrls_FullMethodName     = "/urlCutter.URLCutter/GetUserUrls"
+	URLCutter_DeleteUrls_FullMethodName      = "/urlCutter.URLCutter/DeleteUrls"
+	URLCutter_GetStats_FullMethodName        = "/urlCutter.URLCutter/GetStats"
 )
 
 // URLCutterClient is the client API for URLCutter service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type URLCutterClient interface {
-	Pos(ctx context.Context, in *PostHandlerRequest, opts ...grpc.CallOption) (*PostHandlerResponse, error)
+	BatchShortenURL(ctx context.Context, in *BatchShortenURLRequest, opts ...grpc.CallOption) (*BatchShortenURLResponse, error)
+	GetHandler(ctx context.Context, in *GetHandlerRequest, opts ...grpc.CallOption) (*GetHandlerResponse, error)
+	PostHandler(ctx context.Context, in *PostHandlerRequest, opts ...grpc.CallOption) (*PostHandlerResponse, error)
+	JSONPostHandler(ctx context.Context, in *JSONPostHandlerRequest, opts ...grpc.CallOption) (*JSONPostHandlerResponse, error)
+	DBPing(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*DBPingResponse, error)
+	GetUserUrls(ctx context.Context, in *GetUserUrlsRequest, opts ...grpc.CallOption) (*GetUserUrlsResponse, error)
+	DeleteUrls(ctx context.Context, in *DeleteUrlsRequest, opts ...grpc.CallOption) (*DeleteUrlsResponse, error)
+	GetStats(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetStatsResponse, error)
 }
 
 type uRLCutterClient struct {
@@ -37,10 +52,80 @@ func NewURLCutterClient(cc grpc.ClientConnInterface) URLCutterClient {
 	return &uRLCutterClient{cc}
 }
 
-func (c *uRLCutterClient) Pos(ctx context.Context, in *PostHandlerRequest, opts ...grpc.CallOption) (*PostHandlerResponse, error) {
+func (c *uRLCutterClient) BatchShortenURL(ctx context.Context, in *BatchShortenURLRequest, opts ...grpc.CallOption) (*BatchShortenURLResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BatchShortenURLResponse)
+	err := c.cc.Invoke(ctx, URLCutter_BatchShortenURL_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *uRLCutterClient) GetHandler(ctx context.Context, in *GetHandlerRequest, opts ...grpc.CallOption) (*GetHandlerResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetHandlerResponse)
+	err := c.cc.Invoke(ctx, URLCutter_GetHandler_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *uRLCutterClient) PostHandler(ctx context.Context, in *PostHandlerRequest, opts ...grpc.CallOption) (*PostHandlerResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PostHandlerResponse)
-	err := c.cc.Invoke(ctx, URLCutter_Pos_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, URLCutter_PostHandler_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *uRLCutterClient) JSONPostHandler(ctx context.Context, in *JSONPostHandlerRequest, opts ...grpc.CallOption) (*JSONPostHandlerResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(JSONPostHandlerResponse)
+	err := c.cc.Invoke(ctx, URLCutter_JSONPostHandler_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *uRLCutterClient) DBPing(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*DBPingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DBPingResponse)
+	err := c.cc.Invoke(ctx, URLCutter_DBPing_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *uRLCutterClient) GetUserUrls(ctx context.Context, in *GetUserUrlsRequest, opts ...grpc.CallOption) (*GetUserUrlsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetUserUrlsResponse)
+	err := c.cc.Invoke(ctx, URLCutter_GetUserUrls_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *uRLCutterClient) DeleteUrls(ctx context.Context, in *DeleteUrlsRequest, opts ...grpc.CallOption) (*DeleteUrlsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteUrlsResponse)
+	err := c.cc.Invoke(ctx, URLCutter_DeleteUrls_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *uRLCutterClient) GetStats(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*GetStatsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetStatsResponse)
+	err := c.cc.Invoke(ctx, URLCutter_GetStats_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +136,14 @@ func (c *uRLCutterClient) Pos(ctx context.Context, in *PostHandlerRequest, opts 
 // All implementations must embed UnimplementedURLCutterServer
 // for forward compatibility.
 type URLCutterServer interface {
-	Pos(context.Context, *PostHandlerRequest) (*PostHandlerResponse, error)
+	BatchShortenURL(context.Context, *BatchShortenURLRequest) (*BatchShortenURLResponse, error)
+	GetHandler(context.Context, *GetHandlerRequest) (*GetHandlerResponse, error)
+	PostHandler(context.Context, *PostHandlerRequest) (*PostHandlerResponse, error)
+	JSONPostHandler(context.Context, *JSONPostHandlerRequest) (*JSONPostHandlerResponse, error)
+	DBPing(context.Context, *emptypb.Empty) (*DBPingResponse, error)
+	GetUserUrls(context.Context, *GetUserUrlsRequest) (*GetUserUrlsResponse, error)
+	DeleteUrls(context.Context, *DeleteUrlsRequest) (*DeleteUrlsResponse, error)
+	GetStats(context.Context, *emptypb.Empty) (*GetStatsResponse, error)
 	mustEmbedUnimplementedURLCutterServer()
 }
 
@@ -62,8 +154,29 @@ type URLCutterServer interface {
 // pointer dereference when methods are called.
 type UnimplementedURLCutterServer struct{}
 
-func (UnimplementedURLCutterServer) Pos(context.Context, *PostHandlerRequest) (*PostHandlerResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Pos not implemented")
+func (UnimplementedURLCutterServer) BatchShortenURL(context.Context, *BatchShortenURLRequest) (*BatchShortenURLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BatchShortenURL not implemented")
+}
+func (UnimplementedURLCutterServer) GetHandler(context.Context, *GetHandlerRequest) (*GetHandlerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetHandler not implemented")
+}
+func (UnimplementedURLCutterServer) PostHandler(context.Context, *PostHandlerRequest) (*PostHandlerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PostHandler not implemented")
+}
+func (UnimplementedURLCutterServer) JSONPostHandler(context.Context, *JSONPostHandlerRequest) (*JSONPostHandlerResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method JSONPostHandler not implemented")
+}
+func (UnimplementedURLCutterServer) DBPing(context.Context, *emptypb.Empty) (*DBPingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DBPing not implemented")
+}
+func (UnimplementedURLCutterServer) GetUserUrls(context.Context, *GetUserUrlsRequest) (*GetUserUrlsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetUserUrls not implemented")
+}
+func (UnimplementedURLCutterServer) DeleteUrls(context.Context, *DeleteUrlsRequest) (*DeleteUrlsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteUrls not implemented")
+}
+func (UnimplementedURLCutterServer) GetStats(context.Context, *emptypb.Empty) (*GetStatsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetStats not implemented")
 }
 func (UnimplementedURLCutterServer) mustEmbedUnimplementedURLCutterServer() {}
 func (UnimplementedURLCutterServer) testEmbeddedByValue()                   {}
@@ -86,20 +199,146 @@ func RegisterURLCutterServer(s grpc.ServiceRegistrar, srv URLCutterServer) {
 	s.RegisterService(&URLCutter_ServiceDesc, srv)
 }
 
-func _URLCutter_Pos_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _URLCutter_BatchShortenURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BatchShortenURLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(URLCutterServer).BatchShortenURL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: URLCutter_BatchShortenURL_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(URLCutterServer).BatchShortenURL(ctx, req.(*BatchShortenURLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _URLCutter_GetHandler_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetHandlerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(URLCutterServer).GetHandler(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: URLCutter_GetHandler_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(URLCutterServer).GetHandler(ctx, req.(*GetHandlerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _URLCutter_PostHandler_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PostHandlerRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(URLCutterServer).Pos(ctx, in)
+		return srv.(URLCutterServer).PostHandler(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: URLCutter_Pos_FullMethodName,
+		FullMethod: URLCutter_PostHandler_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(URLCutterServer).Pos(ctx, req.(*PostHandlerRequest))
+		return srv.(URLCutterServer).PostHandler(ctx, req.(*PostHandlerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _URLCutter_JSONPostHandler_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(JSONPostHandlerRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(URLCutterServer).JSONPostHandler(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: URLCutter_JSONPostHandler_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(URLCutterServer).JSONPostHandler(ctx, req.(*JSONPostHandlerRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _URLCutter_DBPing_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(URLCutterServer).DBPing(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: URLCutter_DBPing_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(URLCutterServer).DBPing(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _URLCutter_GetUserUrls_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetUserUrlsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(URLCutterServer).GetUserUrls(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: URLCutter_GetUserUrls_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(URLCutterServer).GetUserUrls(ctx, req.(*GetUserUrlsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _URLCutter_DeleteUrls_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteUrlsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(URLCutterServer).DeleteUrls(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: URLCutter_DeleteUrls_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(URLCutterServer).DeleteUrls(ctx, req.(*DeleteUrlsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _URLCutter_GetStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(URLCutterServer).GetStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: URLCutter_GetStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(URLCutterServer).GetStats(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -112,8 +351,36 @@ var URLCutter_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*URLCutterServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Pos",
-			Handler:    _URLCutter_Pos_Handler,
+			MethodName: "BatchShortenURL",
+			Handler:    _URLCutter_BatchShortenURL_Handler,
+		},
+		{
+			MethodName: "GetHandler",
+			Handler:    _URLCutter_GetHandler_Handler,
+		},
+		{
+			MethodName: "PostHandler",
+			Handler:    _URLCutter_PostHandler_Handler,
+		},
+		{
+			MethodName: "JSONPostHandler",
+			Handler:    _URLCutter_JSONPostHandler_Handler,
+		},
+		{
+			MethodName: "DBPing",
+			Handler:    _URLCutter_DBPing_Handler,
+		},
+		{
+			MethodName: "GetUserUrls",
+			Handler:    _URLCutter_GetUserUrls_Handler,
+		},
+		{
+			MethodName: "DeleteUrls",
+			Handler:    _URLCutter_DeleteUrls_Handler,
+		},
+		{
+			MethodName: "GetStats",
+			Handler:    _URLCutter_GetStats_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

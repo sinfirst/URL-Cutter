@@ -42,13 +42,21 @@ func (a *App) BatchShortenURL(w http.ResponseWriter, r *http.Request) {
 		a.logger.Errorw("Batch cannot be empty")
 		return
 	}
-	resp, err := a.handler.BatchShortenURL(r.Context(), requests)
-	if err != nil {
-		a.logger.Errorw("Problem with set in storage", err)
+	var responces []models.ShortenResponseForBatch
+	for _, req := range requests {
+		shortURL, err := a.handler.Shortener(r.Context(), req.OriginalURL, 0)
+		if err != nil {
+			a.logger.Errorw("Problem with set in storage", err)
+			return
+		}
+		responces = append(responces, models.ShortenResponseForBatch{
+			CorrelationID: req.CorrelationID,
+			ShortURL:      shortURL,
+		})
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(resp)
+	json.NewEncoder(w).Encode(responces)
 }
 
 // GetHandler осуществляет редирект на полный урл, если короткий урл есть в базе
@@ -82,12 +90,12 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "url param required", http.StatusBadRequest)
 		return
 	}
-	shortURL, typeOfErr, err := a.handler.PostHandler(r.Context(), body, UserID)
-	if typeOfErr == 1 {
+	shortURL, err := a.handler.Shortener(r.Context(), string(body), UserID)
+	if err.Error() == "conflict" {
 		w.WriteHeader(http.StatusConflict)
 		w.Write([]byte(shortURL))
 		return
-	} else if typeOfErr == 2 {
+	} else if err != nil {
 		a.logger.Errorw("problem with set in storage", err)
 		return
 	}
@@ -106,15 +114,25 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	JSONResponse, typeOfError, err := a.handler.JSONPostHandler(r.Context(), input)
-	if typeOfError == 1 {
+	shortURL, err := a.handler.Shortener(r.Context(), input.URL, 0)
+	output := models.ResultURL{Result: shortURL}
+	if err.Error() == "conflict" {
+		JSONResponse, err := json.Marshal(output)
+		if err != nil {
+			a.logger.Errorw("problem with marshal json", err)
+			return
+		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
 		w.Write(JSONResponse)
-	} else if typeOfError == 2 {
-		a.logger.Errorw("problem with marshal json", err)
-	} else if typeOfError == 3 {
+	} else if err != nil {
 		a.logger.Errorw("problem with set in storage", err)
+		return
+	}
+	JSONResponse, err := json.Marshal(output)
+	if err != nil {
+		a.logger.Errorw("problem with marshal json", err)
+		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -175,6 +193,7 @@ func (a *App) GetUserUrls(w http.ResponseWriter, r *http.Request) {
 
 // DeleteUrls удаляет запрошенные урлы
 func (a *App) DeleteUrls(w http.ResponseWriter, r *http.Request) {
+	var urlIDs []string
 	body, err := io.ReadAll(r.Body)
 
 	if err != nil {
@@ -183,24 +202,25 @@ func (a *App) DeleteUrls(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	err = a.handler.DeleteUrls(body)
+	err = json.Unmarshal(body, &urlIDs)
 	if err != nil {
 		a.logger.Errorw("Ошибка парсинга json")
 	}
+	a.handler.DeleteUrls(urlIDs)
 	w.WriteHeader(http.StatusAccepted)
 }
 
 // GetStats получает статистику сервера(кол-во сокращенных urlов и кол-во уникальных пользователей)
 func (a *App) GetStats(w http.ResponseWriter, r *http.Request) {
 	ipFromRequest := r.Header.Get("X-Real-IP")
-	resp, typeOfError, err := a.handler.GetStats(r.Context(), ipFromRequest)
-	if typeOfError == 1 {
+	countURLs, users, err := a.handler.GetStats(r.Context(), ipFromRequest)
+	if err.Error() == "forbidden" {
 		w.WriteHeader(http.StatusForbidden)
 		return
-	} else if typeOfError == 2 {
+	} else if err != nil {
 		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
 	}
-	err = json.NewEncoder(w).Encode(resp)
+	err = json.NewEncoder(w).Encode(models.ServerStats{URLs: countURLs, Users: users})
 	if err != nil {
 		http.Error(w, fmt.Sprintf("%v", err), http.StatusInternalServerError)
 	}

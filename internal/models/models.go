@@ -17,8 +17,8 @@ type ShortenRequestForBatch struct {
 	OriginalURL   string `json:"original_url"`
 }
 
-// ShortenResponceForBatch cтруктура необходимая для кодирования JSON при запросе на группу урлов
-type ShortenResponceForBatch struct {
+// ShortenResponseForBatch cтруктура необходимая для кодирования JSON при запросе на группу урлов
+type ShortenResponseForBatch struct {
 	CorrelationID string `json:"correlation_id"`
 	ShortURL      string `json:"short_url"`
 }

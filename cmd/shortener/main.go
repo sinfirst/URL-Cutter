@@ -83,7 +83,7 @@ func main() {
 		log.Fatal(err)
 	}
 	s := grpc.NewServer()
-	pb.RegisterURLCutterServer(s, grpc_server.NewURLCutterServer())
+	pb.RegisterURLCutterServer(s, grpc_server.NewURLCutterServer(logger, handlers))
 	fmt.Println("Сервер gRPC начал работу")
 	if err := s.Serve(listen); err != nil {
 		log.Fatal(err)
