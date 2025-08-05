@@ -12,7 +12,7 @@ import (
 
 	"github.com/sinfirst/URL-Cutter/internal/app"
 	"github.com/sinfirst/URL-Cutter/internal/config"
-	grpcServer "github.com/sinfirst/URL-Cutter/internal/grpc_server"
+	grpcserver "github.com/sinfirst/URL-Cutter/internal/grpc_server"
 	"github.com/sinfirst/URL-Cutter/internal/handlers"
 	"github.com/sinfirst/URL-Cutter/internal/middleware/logging"
 	"github.com/sinfirst/URL-Cutter/internal/router"
