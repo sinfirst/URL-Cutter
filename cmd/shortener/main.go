@@ -12,7 +12,7 @@ import (
 
 	"github.com/sinfirst/URL-Cutter/internal/app"
 	"github.com/sinfirst/URL-Cutter/internal/config"
-	"github.com/sinfirst/URL-Cutter/internal/grpc_server"
+	grpcServer "github.com/sinfirst/URL-Cutter/internal/grpc_server"
 	"github.com/sinfirst/URL-Cutter/internal/handlers"
 	"github.com/sinfirst/URL-Cutter/internal/middleware/logging"
 	"github.com/sinfirst/URL-Cutter/internal/router"
@@ -83,7 +83,7 @@ func main() {
 		log.Fatal(err)
 	}
 	s := grpc.NewServer()
-	pb.RegisterURLCutterServer(s, grpc_server.NewURLCutterServer(logger, handlers))
+	pb.RegisterURLCutterServer(s, grpcServer.NewURLCutterServer(logger, handlers))
 	fmt.Println("Сервер gRPC начал работу")
 	if err := s.Serve(listen); err != nil {
 		log.Fatal(err)
