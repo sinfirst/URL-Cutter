@@ -2,10 +2,12 @@ package grpc_server
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/sinfirst/URL-Cutter/internal/handlers"
 	pb "github.com/sinfirst/URL-Cutter/proto/url_cutter"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -56,7 +58,8 @@ func (s *URLCutterServer) PostHandler(ctx context.Context, in *pb.PostHandlerReq
 
 func (s *URLCutterServer) JSONPostHandler(ctx context.Context, in *pb.JSONPostHandlerRequest) (*pb.JSONPostHandlerResponse, error) {
 	return &pb.JSONPostHandlerResponse{}, nil
-	//
+	//не вижу логического смысла так как в proto нет json структур, соответственно придется передавать либо через string либо byte, выглядеть будет сомнительно
+
 }
 
 func (s *URLCutterServer) DBPing(ctx context.Context, in *emptypb.Empty) (*pb.DBPingResponse, error) {
@@ -81,5 +84,16 @@ func (s *URLCutterServer) GetUserUrls(ctx context.Context, in *pb.GetUserUrlsReq
 
 func (s *URLCutterServer) DeleteUrls(ctx context.Context, in *pb.DeleteUrlsRequest) (*pb.DeleteUrlsResponse, error) {
 	s.handler.DeleteUrls(in.Urls)
+	return &pb.DeleteUrlsResponse{}, nil
+}
 
+func (s *URLCutterServer) GetStats(ctx context.Context, in *emptypb.Empty) (*pb.GetStatsResponse, error) {
+	var ip string
+	if pr, ok := peer.FromContext(ctx); ok {
+		ip = pr.Addr.String()
+	} else {
+		return nil, fmt.Errorf("problem with read ip")
+	}
+	urls, users, err := s.handler.GetStats(ctx, ip)
+	return &pb.GetStatsResponse{Urls: int64(urls), Users: int64(users)}, err
 }
