@@ -3,6 +3,7 @@ package app
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -91,7 +92,7 @@ func (a *App) PostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	shortURL, err := a.handler.Shortener(r.Context(), string(body), UserID)
-	if err.Error() == "conflict" {
+	if errors.Is(err, fmt.Errorf("conflict")) {
 		w.WriteHeader(http.StatusConflict)
 		w.Write([]byte(shortURL))
 		return
@@ -116,7 +117,7 @@ func (a *App) JSONPostHandler(w http.ResponseWriter, r *http.Request) {
 
 	shortURL, err := a.handler.Shortener(r.Context(), input.URL, 0)
 	output := models.ResultURL{Result: shortURL}
-	if err.Error() == "conflict" {
+	if errors.Is(err, fmt.Errorf("conflict")) {
 		JSONResponse, err := json.Marshal(output)
 		if err != nil {
 			a.logger.Errorw("problem with marshal json", err)

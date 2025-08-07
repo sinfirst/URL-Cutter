@@ -313,7 +313,6 @@ func (x *GetHandlerRequest) GetId() string {
 type GetHandlerResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	OrigURL       string                 `protobuf:"bytes,1,opt,name=origURL,proto3" json:"origURL,omitempty"`
-	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -351,13 +350,6 @@ func (*GetHandlerResponse) Descriptor() ([]byte, []int) {
 func (x *GetHandlerResponse) GetOrigURL() string {
 	if x != nil {
 		return x.OrigURL
-	}
-	return ""
-}
-
-func (x *GetHandlerResponse) GetError() string {
-	if x != nil {
-		return x.Error
 	}
 	return ""
 }
@@ -418,7 +410,6 @@ type PostHandlerResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ShortUrl      string                 `protobuf:"bytes,1,opt,name=short_url,json=shortUrl,proto3" json:"short_url,omitempty"`
 	UserID        int64                  `protobuf:"varint,2,opt,name=userID,proto3" json:"userID,omitempty"`
-	Error         string                 `protobuf:"bytes,3,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -465,13 +456,6 @@ func (x *PostHandlerResponse) GetUserID() int64 {
 		return x.UserID
 	}
 	return 0
-}
-
-func (x *PostHandlerResponse) GetError() string {
-	if x != nil {
-		return x.Error
-	}
-	return ""
 }
 
 type JSONPostHandlerRequest struct {
@@ -521,7 +505,6 @@ func (x *JSONPostHandlerRequest) GetUrl() string {
 type JSONPostHandlerResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	ShortUrl      string                 `protobuf:"bytes,1,opt,name=short_url,json=shortUrl,proto3" json:"short_url,omitempty"`
-	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -563,16 +546,8 @@ func (x *JSONPostHandlerResponse) GetShortUrl() string {
 	return ""
 }
 
-func (x *JSONPostHandlerResponse) GetError() string {
-	if x != nil {
-		return x.Error
-	}
-	return ""
-}
-
 type DBPingResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Error         string                 `protobuf:"bytes,1,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -605,13 +580,6 @@ func (x *DBPingResponse) ProtoReflect() protoreflect.Message {
 // Deprecated: Use DBPingResponse.ProtoReflect.Descriptor instead.
 func (*DBPingResponse) Descriptor() ([]byte, []int) {
 	return file_url_cutter_proto_rawDescGZIP(), []int{11}
-}
-
-func (x *DBPingResponse) GetError() string {
-	if x != nil {
-		return x.Error
-	}
-	return ""
 }
 
 type GetUserUrlsRequest struct {
@@ -661,7 +629,6 @@ func (x *GetUserUrlsRequest) GetUserID() int64 {
 type GetUserUrlsResponse struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	ShortenResponse []*ShortenOrigURLs     `protobuf:"bytes,1,rep,name=shortenResponse,proto3" json:"shortenResponse,omitempty"`
-	Error           string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields   protoimpl.UnknownFields
 	sizeCache       protoimpl.SizeCache
 }
@@ -701,13 +668,6 @@ func (x *GetUserUrlsResponse) GetShortenResponse() []*ShortenOrigURLs {
 		return x.ShortenResponse
 	}
 	return nil
-}
-
-func (x *GetUserUrlsResponse) GetError() string {
-	if x != nil {
-		return x.Error
-	}
-	return ""
 }
 
 type DeleteUrlsRequest struct {
@@ -756,7 +716,6 @@ func (x *DeleteUrlsRequest) GetUrls() []string {
 
 type DeleteUrlsResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Error         string                 `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -789,13 +748,6 @@ func (x *DeleteUrlsResponse) ProtoReflect() protoreflect.Message {
 // Deprecated: Use DeleteUrlsResponse.ProtoReflect.Descriptor instead.
 func (*DeleteUrlsResponse) Descriptor() ([]byte, []int) {
 	return file_url_cutter_proto_rawDescGZIP(), []int{15}
-}
-
-func (x *DeleteUrlsResponse) GetError() string {
-	if x != nil {
-		return x.Error
-	}
-	return ""
 }
 
 type GetStatsResponse struct {
@@ -869,33 +821,27 @@ const file_url_cutter_proto_rawDesc = "" +
 	"\x17BatchShortenURLResponse\x12N\n" +
 	"\x10shortenResponses\x18\x01 \x03(\v2\".urlCutter.ShortenResponseForBatchR\x10shortenResponses\"#\n" +
 	"\x11GetHandlerRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"D\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\".\n" +
 	"\x12GetHandlerResponse\x12\x18\n" +
-	"\aorigURL\x18\x01 \x01(\tR\aorigURL\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\">\n" +
+	"\aorigURL\x18\x01 \x01(\tR\aorigURL\">\n" +
 	"\x12PostHandlerRequest\x12\x10\n" +
 	"\x03url\x18\x01 \x01(\tR\x03url\x12\x16\n" +
-	"\x06userID\x18\x02 \x01(\x03R\x06userID\"`\n" +
+	"\x06userID\x18\x02 \x01(\x03R\x06userID\"J\n" +
 	"\x13PostHandlerResponse\x12\x1b\n" +
 	"\tshort_url\x18\x01 \x01(\tR\bshortUrl\x12\x16\n" +
-	"\x06userID\x18\x02 \x01(\x03R\x06userID\x12\x14\n" +
-	"\x05error\x18\x03 \x01(\tR\x05error\"*\n" +
+	"\x06userID\x18\x02 \x01(\x03R\x06userID\"*\n" +
 	"\x16JSONPostHandlerRequest\x12\x10\n" +
-	"\x03url\x18\x01 \x01(\tR\x03url\"L\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url\"6\n" +
 	"\x17JSONPostHandlerResponse\x12\x1b\n" +
-	"\tshort_url\x18\x01 \x01(\tR\bshortUrl\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\"&\n" +
-	"\x0eDBPingResponse\x12\x14\n" +
-	"\x05error\x18\x01 \x01(\tR\x05error\",\n" +
+	"\tshort_url\x18\x01 \x01(\tR\bshortUrl\"\x10\n" +
+	"\x0eDBPingResponse\",\n" +
 	"\x12GetUserUrlsRequest\x12\x16\n" +
-	"\x06userID\x18\x01 \x01(\x03R\x06userID\"q\n" +
+	"\x06userID\x18\x01 \x01(\x03R\x06userID\"[\n" +
 	"\x13GetUserUrlsResponse\x12D\n" +
-	"\x0fshortenResponse\x18\x01 \x03(\v2\x1a.urlCutter.ShortenOrigURLsR\x0fshortenResponse\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\"'\n" +
+	"\x0fshortenResponse\x18\x01 \x03(\v2\x1a.urlCutter.ShortenOrigURLsR\x0fshortenResponse\"'\n" +
 	"\x11DeleteUrlsRequest\x12\x12\n" +
-	"\x04urls\x18\x01 \x03(\tR\x04urls\"*\n" +
-	"\x12DeleteUrlsResponse\x12\x14\n" +
-	"\x05error\x18\x02 \x01(\tR\x05error\"<\n" +
+	"\x04urls\x18\x01 \x03(\tR\x04urls\"\x14\n" +
+	"\x12DeleteUrlsResponse\"<\n" +
 	"\x10GetStatsResponse\x12\x12\n" +
 	"\x04urls\x18\x01 \x01(\x03R\x04urls\x12\x14\n" +
 	"\x05users\x18\x02 \x01(\x03R\x05users2\xef\x04\n" +

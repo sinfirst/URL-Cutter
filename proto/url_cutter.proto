@@ -32,7 +32,6 @@ message GetHandlerRequest{
 }
 message GetHandlerResponse{
   string origURL = 1;
-  string error = 2;
 }
 
 
@@ -43,7 +42,6 @@ message PostHandlerRequest {
 message PostHandlerResponse {
   string short_url = 1;
   int64 userID = 2;
-  string error = 3;
 }
 
 
@@ -52,11 +50,9 @@ message JSONPostHandlerRequest {
 }
 message JSONPostHandlerResponse {
   string short_url = 1;
-  string error = 2;
 }
 
 message DBPingResponse{
-  string error = 1;
 }
 
 message GetUserUrlsRequest{
@@ -64,14 +60,12 @@ message GetUserUrlsRequest{
 }
 message GetUserUrlsResponse{
   repeated ShortenOrigURLs shortenResponse = 1;
-  string error = 2;
 }
 
 message DeleteUrlsRequest{
   repeated string urls = 1;
 }
 message DeleteUrlsResponse{
-  string error = 2;
 }
 
 message GetStatsResponse{
