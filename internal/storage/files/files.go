@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/models"
+	"github.com/sinfirst/URL-Cutter/internal/config"
+	"github.com/sinfirst/URL-Cutter/internal/models"
 	"go.uber.org/zap"
 )
 
@@ -120,4 +120,31 @@ func (f *File) GetURL(ctx context.Context, shortURL string) (string, error) {
 // GetByUserID заглушка для DataBase
 func (f *File) GetByUserID(ctx context.Context, userID int) ([]models.ShortenOrigURLs, error) {
 	return nil, nil
+}
+
+// GetCountURLs считает кол-во сокращенных URL
+func (f *File) GetCountURLs(ctx context.Context) (int, error) {
+	err := os.MkdirAll(filepath.Dir(f.config.FilePath), os.ModePerm)
+
+	if err != nil {
+		return 0, err
+	}
+
+	file, err := os.OpenFile(f.config.FilePath, os.O_RDONLY|os.O_CREATE, 06666)
+
+	if err != nil {
+		f.logger.Infow("Problem with open file")
+		return 0, err
+	}
+
+	f.logger.Infow("created file in direction: " + f.config.FilePath)
+
+	defer file.Close()
+
+	fileScanner := bufio.NewScanner(file)
+	countURLs := 0
+	for fileScanner.Scan() {
+		countURLs++
+	}
+	return countURLs, nil
 }

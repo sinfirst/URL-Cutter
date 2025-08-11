@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/sinfirst/URL-Cutter/internal/app/models"
+	"github.com/sinfirst/URL-Cutter/internal/models"
 )
 
 // MapStorage структура
@@ -42,4 +42,9 @@ func (s *MapStorage) GetURL(ctx context.Context, key string) (string, error) {
 // GetByUserID заглушка для DataBase
 func (s *MapStorage) GetByUserID(ctx context.Context, userID int) ([]models.ShortenOrigURLs, error) {
 	return nil, nil
+}
+
+// GetCountURLs считает кол-во сокращенных URL
+func (s *MapStorage) GetCountURLs(ctx context.Context) (int, error) {
+	return len(s.data), nil
 }

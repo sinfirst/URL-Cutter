@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package urlCutter;
+
+import "google/protobuf/empty.proto";
+
+option go_package = ".;";
+
+message ShortenRequestForBatch{
+  string correlationID = 1;
+	string originalURL = 2;
+}
+message ShortenResponseForBatch{
+  string correlationID = 1;
+	string shortURL = 2;
+}
+message ShortenOrigURLs{
+	string shortURL = 1;
+	string originalURL = 2;
+}
+
+message BatchShortenURLRequest {
+  repeated ShortenRequestForBatch shortenRequests = 1;
+}
+message BatchShortenURLResponse {
+  repeated ShortenResponseForBatch shortenResponses = 1;
+}
+
+
+message GetHandlerRequest{
+  string id = 1;
+}
+message GetHandlerResponse{
+  string origURL = 1;
+}
+
+
+message PostHandlerRequest {
+  string url = 1;
+  int64 userID = 2;
+}
+message PostHandlerResponse {
+  string short_url = 1;
+  int64 userID = 2;
+}
+
+
+message JSONPostHandlerRequest {
+  string url = 1;
+}
+message JSONPostHandlerResponse {
+  string short_url = 1;
+}
+
+message DBPingResponse{
+}
+
+message GetUserUrlsRequest{
+  int64 userID = 1;
+}
+message GetUserUrlsResponse{
+  repeated ShortenOrigURLs shortenResponse = 1;
+}
+
+message DeleteUrlsRequest{
+  repeated string urls = 1;
+}
+message DeleteUrlsResponse{
+}
+
+message GetStatsResponse{
+  int64 urls = 1;
+  int64 users = 2; 
+}
+
+service URLCutter {
+  rpc BatchShortenURL(BatchShortenURLRequest) returns (BatchShortenURLResponse);
+  rpc GetHandler(GetHandlerRequest) returns (GetHandlerResponse);
+  rpc PostHandler(PostHandlerRequest) returns (PostHandlerResponse);
+  rpc JSONPostHandler(JSONPostHandlerRequest) returns (JSONPostHandlerResponse);
+  rpc DBPing(google.protobuf.Empty) returns (DBPingResponse);
+  rpc GetUserUrls(GetUserUrlsRequest) returns (GetUserUrlsResponse);
+  rpc DeleteUrls(DeleteUrlsRequest) returns (DeleteUrlsResponse);
+  rpc GetStats(google.protobuf.Empty) returns (GetStatsResponse);
+
+}

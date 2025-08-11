@@ -3,10 +3,10 @@ package router
 
 import (
 	"github.com/go-chi/chi/v5"
-	"github.com/sinfirst/URL-Cutter/internal/app/app"
-	"github.com/sinfirst/URL-Cutter/internal/app/middleware/compress"
-	"github.com/sinfirst/URL-Cutter/internal/app/middleware/jwtgen"
-	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
+	"github.com/sinfirst/URL-Cutter/internal/app"
+	"github.com/sinfirst/URL-Cutter/internal/middleware/compress"
+	"github.com/sinfirst/URL-Cutter/internal/middleware/jwtgen"
+	"github.com/sinfirst/URL-Cutter/internal/middleware/logging"
 )
 
 // NewRouter описание всех эндпоинтов
@@ -17,10 +17,11 @@ func NewRouter(a *app.App) *chi.Mux {
 	router.With(compress.DecompressHandle).Post("/api/shorten", a.JSONPostHandler)
 	router.With(compress.DecompressHandle).Post("/api/shorten/batch", a.BatchShortenURL)
 	router.With(compress.CompressHandle).Get("/{id}", a.GetHandler)
+	router.With(compress.CompressHandle).Get("/api/internal/stats", a.GetStats)
+
 	router.Get("/ping", a.DBPing)
 	router.Get("/api/user/urls", a.GetUserUrls)
 	router.Delete("/api/user/urls", a.DeleteUrls)
-	router.With(compress.CompressHandle).Get("/{id}", a.GetHandler)
 
 	return router
 }

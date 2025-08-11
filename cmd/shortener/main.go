@@ -3,18 +3,24 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/sinfirst/URL-Cutter/internal/app/app"
-	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/middleware/logging"
-	"github.com/sinfirst/URL-Cutter/internal/app/router"
-	"github.com/sinfirst/URL-Cutter/internal/app/storage"
-	"github.com/sinfirst/URL-Cutter/internal/app/storage/pg/postgresbd"
-	"github.com/sinfirst/URL-Cutter/internal/app/workers"
+	"github.com/sinfirst/URL-Cutter/internal/app"
+	"github.com/sinfirst/URL-Cutter/internal/config"
+	grpcserver "github.com/sinfirst/URL-Cutter/internal/grpc_server"
+	"github.com/sinfirst/URL-Cutter/internal/handlers"
+	"github.com/sinfirst/URL-Cutter/internal/middleware/logging"
+	"github.com/sinfirst/URL-Cutter/internal/router"
+	"github.com/sinfirst/URL-Cutter/internal/storage"
+	"github.com/sinfirst/URL-Cutter/internal/storage/pg/postgresbd"
+	"github.com/sinfirst/URL-Cutter/internal/workers"
+	pb "github.com/sinfirst/URL-Cutter/proto/url_cutter"
+	"google.golang.org/grpc"
 )
 
 // Переменные для версии сборки
@@ -43,7 +49,8 @@ func main() {
 	}
 	db := postgresbd.NewPGDB(conf, logger)
 	strg := storage.NewStorage(conf, logger)
-	a := app.NewApp(strg, conf, logger, deleteCh)
+	handlers := handlers.NewHandler(strg, conf, deleteCh)
+	a := app.NewApp(logger, handlers)
 	router := router.NewRouter(a)
 	workers := workers.NewDeleteWorker(ctx, db, deleteCh)
 	if conf.DatabaseDsn != "" {
@@ -71,10 +78,21 @@ func main() {
 		}()
 	}
 
+	listen, err := net.Listen("tcp", ":3200")
+	if err != nil {
+		log.Fatal(err)
+	}
+	s := grpc.NewServer(grpc.UnaryInterceptor(logging.LoggingUnaryInterceptor(logger)))
+	pb.RegisterURLCutterServer(s, grpcserver.NewURLCutterServer(logger, handlers))
+	fmt.Println("Сервер gRPC начал работу")
+	if err := s.Serve(listen); err != nil {
+		log.Fatal(err)
+	}
+
 	<-ctx.Done()
 	if err := server.Shutdown(context.Background()); err != nil {
 		logger.Errorw("Server shutdown error", err)
 	}
 	workers.StopWorker()
-	a.CloseCh()
+	close(deleteCh)
 }

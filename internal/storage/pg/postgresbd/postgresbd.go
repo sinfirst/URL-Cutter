@@ -13,8 +13,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pressly/goose/v3"
-	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/models"
+	"github.com/sinfirst/URL-Cutter/internal/config"
+	"github.com/sinfirst/URL-Cutter/internal/models"
 	"go.uber.org/zap"
 )
 
@@ -120,6 +120,20 @@ func (p *PGDB) GetByUserID(ctx context.Context, userID int) ([]models.ShortenOri
 		return nil, fmt.Errorf("original url is empty")
 	}
 	return urls, nil
+}
+
+// GetCountURLs считает кол-во сокращенных URL
+func (p *PGDB) GetCountURLs(ctx context.Context) (int, error) {
+	var countURls int
+
+	query := `SELECT COUNT(1) FROM urls`
+	row := p.db.QueryRow(ctx, query)
+	err := row.Scan(&countURls)
+	if err != nil {
+		return 0, err
+	}
+
+	return countURls, err
 }
 
 // InitMigrations инициализация миграций

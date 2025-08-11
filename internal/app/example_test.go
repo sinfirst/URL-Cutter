@@ -10,9 +10,10 @@ import (
 	"net/http/httptest"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/models"
-	"github.com/sinfirst/URL-Cutter/internal/app/storage/memory"
+	"github.com/sinfirst/URL-Cutter/internal/config"
+	"github.com/sinfirst/URL-Cutter/internal/handlers"
+	"github.com/sinfirst/URL-Cutter/internal/models"
+	"github.com/sinfirst/URL-Cutter/internal/storage/memory"
 )
 
 func ExampleApp_PostHandler() {
@@ -23,10 +24,10 @@ func ExampleApp_PostHandler() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	app := &App{
-		storage: m1,
-		config:  conf,
-	}
+	delCh := make(chan string, 6)
+	defer close(delCh)
+	buisnessHandler := handlers.NewHandler(m1, conf, delCh)
+	app := &App{handler: buisnessHandler}
 	// инициализируем body запроса
 	originalURL := "https://example.com"
 	reqBody := []byte(originalURL)
@@ -60,10 +61,14 @@ func ExampleApp_JSONPostHandler() {
 	// Подготовка к выполнению запроса
 	m1 := memory.NewMapStorage()
 	m1.SetURL(context.Background(), "abc123", "https://example.com", 0)
-	app := &App{
-		storage: memory.NewMapStorage(),
-		config:  config.Config{Host: "http://localhost"},
+	conf, err := config.NewConfig()
+	if err != nil {
+		fmt.Println(err)
 	}
+	delCh := make(chan string, 6)
+	defer close(delCh)
+	buisnessHandler := handlers.NewHandler(m1, conf, delCh)
+	app := &App{handler: buisnessHandler}
 	// инициализируем body запроса
 	requestBody := `{"url":"https://example.com"}`
 
@@ -88,14 +93,21 @@ func ExampleApp_JSONPostHandler() {
 
 	// Output:
 	// 201
-	// http://localhost/c984d06a
+	// http://localhost:8080/c984d06a
 }
 
 func ExampleApp_GetHandler() {
 	// Подготовка к выполнению запроса
 	m1 := memory.NewMapStorage()
 	m1.SetURL(context.Background(), "c984d06a", "https://example.com", 0)
-	app := &App{storage: m1}
+	conf, err := config.NewConfig()
+	if err != nil {
+		fmt.Println(err)
+	}
+	delCh := make(chan string, 6)
+	defer close(delCh)
+	buisnessHandler := handlers.NewHandler(m1, conf, delCh)
+	app := &App{handler: buisnessHandler}
 
 	// Используем chi роутер, чтобы брать id запроса
 	r := chi.NewRouter()

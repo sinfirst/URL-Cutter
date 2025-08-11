@@ -2,16 +2,16 @@
 package storage
 
 import (
-	"github.com/sinfirst/URL-Cutter/internal/app/app"
-	"github.com/sinfirst/URL-Cutter/internal/app/config"
-	"github.com/sinfirst/URL-Cutter/internal/app/storage/files"
-	"github.com/sinfirst/URL-Cutter/internal/app/storage/memory"
-	"github.com/sinfirst/URL-Cutter/internal/app/storage/pg/postgresbd"
+	"github.com/sinfirst/URL-Cutter/internal/config"
+	"github.com/sinfirst/URL-Cutter/internal/handlers"
+	"github.com/sinfirst/URL-Cutter/internal/storage/files"
+	"github.com/sinfirst/URL-Cutter/internal/storage/memory"
+	"github.com/sinfirst/URL-Cutter/internal/storage/pg/postgresbd"
 	"go.uber.org/zap"
 )
 
 // NewStorage инициализация storage интерфеса для хранилища данных
-func NewStorage(conf config.Config, logger zap.SugaredLogger) app.Storage {
+func NewStorage(conf config.Config, logger zap.SugaredLogger) handlers.Storage {
 	if conf.DatabaseDsn != "" {
 		logger.Infow("DB config")
 		return postgresbd.NewPGDB(conf, logger)
